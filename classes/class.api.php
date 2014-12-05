@@ -380,27 +380,26 @@ class api {
 	 * @return (bool)
 	 */
 	private function delete() {
-		if(!empty($this->request->params->shorturl)) {
-			$result[] = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `shorturl` = ? AND `owner` = ? ;", array($this->request->params->shorturl, $this->username));
-			$result[] = $this->db->deleteRow("DELETE FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", array($this->request->params->shorturl, $this->username));
-// TODO: WE NEED TO CHECK RESULT FOR VALIDATE IS THE OWNER,
-// TODO: WE NEED TO PREVENT STRONG QUERY, USE CACHE+CRON FOR ASYNC QUERIES
-//			$result[] = $this->db->insertRow("INSERT INTO `stats_deleted` SELECT * FROM stats WHERE `shorturl` = ? ;", array($this->request->params->shorturl));
-//			$result[] = $this->db->deleteRow("DELETE FROM `stats` WHERE `shorturl` = ? ;", array($this->request->params->shorturl));
+		if(empty($this->request->params->shorturl) && empty($this->request->params->url)) {
+
+			$this->statusCode = 405;
+			exit;
+		}
+
+		if($this->get()) {
 			// Data is gold, we keep it!
-		} elseif(!empty($this->request->params->url)) {
-			$result[] = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `url` = ? AND `owner` = ? ;", array($this->request->params->url, $this->username));
-			$result[] = $this->db->deleteRow("DELETE FROM `data` WHERE `url` = ? AND `owner` = ? ;", array($this->request->params->url, $this->username));
-// TODO: WE NEED TO CHECK RESULT FOR VALIDATE IS THE OWNER,
+			$result[] = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
+			$result[] = $this->db->deleteRow("DELETE FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
 // TODO: WE NEED TO PREVENT STRONG QUERY, USE CACHE+CRON FOR ASYNC QUERIES
-//			$result[] = $this->db->insertRow("INSERT INTO `stats_deleted` SELECT * FROM stats WHERE `url` = ? ;", array($this->request->params->url));
-//			$result[] = $this->db->deleteRow("DELETE FROM `stats` WHERE `url` = ? ;", array($this->request->params->url));
+			$result[] = $this->db->insertRow("INSERT INTO `stats_deleted` SELECT * FROM stats WHERE `shorturl` = ? ;", array($this->shorturl));
+			$result[] = $this->db->deleteRow("DELETE FROM `stats` WHERE `shorturl` = ? ;", array($this->shorturl));
+// TODO: WE NEED TO CHECK RESULT <-
+
 		} else {
 
 			$this->statusCode = 400;
 			exit;
 		}
-
 	}
 
 	/*
