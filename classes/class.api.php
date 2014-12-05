@@ -138,10 +138,9 @@ class api {
 			}
 
 			$this->log();
+
 			$this->return = $this->url;
-
 			exit;
-
 		}
 
 	}
@@ -184,15 +183,24 @@ class api {
 		if(!empty($this->request->params->url)) {
 			$this->url = filter_var($this->request->params->url, FILTER_SANITIZE_URL);
 			$this->giveMeShortUrl();
+			$this->giveMeDescription();
 			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;", 
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-// if ok->
-			$this->return->data = $this->shorturl;
+			if($result) {
+				$this->return->data->url = $this->url;
+				$this->return->data->shorturl = $this->shorturl;
+				$this->return->data->description = $this->description;
+
+				return TRUE;
+			} else {
+
+			$this->statusCode = 202;
+			exit;
+			}
 		} else {
 
 			$this->statusCode = 400;
-
 			exit;
 		}
 	}
@@ -217,7 +225,6 @@ class api {
 				$this->url = $result->url;
 				$this->return->data = $result;
 
-				return TRUE;
 			} else {
 
 				return FALSE;
@@ -252,6 +259,7 @@ class api {
 				return TRUE;
 			} else {
 
+				$this->statusCode = 404;
 				return FALSE;
 			}
 
@@ -275,6 +283,7 @@ class api {
 				return TRUE;
 			} else {
 
+				$this->statusCode = 404;
 				return FALSE;
 			}
 		} else {
@@ -282,7 +291,6 @@ class api {
 			$this->statusCode = 400;
 
 			exit;
-
 		}
 
 	}
@@ -292,20 +300,59 @@ class api {
 	 * @return: (bool)
 	 */
 	private function update() {
-	$result = $this->get();
-// TODO: WE NEED TO CHECK WE HAVE RESULT
-	if($result) {
-		$this->hydrate($result);
-// TODO: WE NEED TO CHECK DESCRIPTION
-		$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
-		array($this->url, $this->ip, $this->description, $this->shorturl, $this->user));
-// TODO: WE NEED TO CHECK RESULT
-	} else {
+		if(empty($this->request->params->shorturl) && empty($this->request->params->url)) {
 
 			$this->statusCode = 405;
-
 			exit;
+		}
 
+		if($this->get()) {
+			$currentShorturl = $this->shorturl;
+			if((!empty($this->request->params->newUrl) && $this->request->params->newUrl != $this->url) OR 
+			(!empty($this->request->params->newShorturl) && $this->request->params->newShorturl != $this->shorturl OR 
+			isset($this->request->params->newShorturl) && empty($this->request->params->newShorturl))) {
+				if(isset($this->request->params->newShorturl) && empty($this->request->params->newShorturl)) {
+					$this->giveMeShortUrl();
+				} elseif(isset($this->request->params->newShorturl) && $this->request->params->newShorturl != $this->shorturl) {
+					if(!$this->isPresent($this->request->params->newShorturl)) {
+						$this->shorturl = $this->request->params->newShorturl;
+					} else {
+
+						$this->statusCode = 403;
+						exit;
+					}
+				}
+
+				if(!empty($this->request->params->newUrl) && $this->request->params->newUrl != $this->url) {
+					$this->url = $this->request->params->newUrl;
+					$this->giveMeDescription();
+				}
+
+				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
+				array($this->url, $this->ip, $this->description, $this->shorturl, $currentShorturl, $this->username));
+// TODO: WE NEED TO CHECK RESULT
+// WE NEED TO UPDATE STATS TABLE IF SHORTURL IS CHANGED
+				$this->return->data->url = $this->url;
+				$this->return->data->shorturl = $this->shorturl;
+				$this->return->data->description = $this->description;
+// TODO: FIX THIS, DON'T RETURN BOOL? ->
+				if($result) {
+
+					return TRUE;
+				} else {
+	
+					$this->statusCode = 202;
+					exit;
+				}
+			} else {
+
+				$this->statusCode = 405;
+				exit;
+			}
+		} else {
+
+			$this->statusCode = 404;
+			exit;
 		}
 
 	}
@@ -346,7 +393,6 @@ class api {
 		} else {
 
 			$this->statusCode = 400;
-
 			exit;
 		}
 
@@ -371,10 +417,34 @@ class api {
 
 				return TRUE;
 			} else {
+
 				return FALSE;
 			}
 		}
 
+	}
+
+	/*
+	 * Check a shorturl is present or not
+	 * (use first argument, otherwise $this->shorturl is use)
+	 * @params: (string) shorturl
+	 * @return: (bool)
+	 */
+	private function isPresent($shorturl = NULL) {
+		if(empty($shorturl)) {
+			$shorturl = $this->shorturl;
+		}
+
+		$result = $this->db->getRow("SELECT COUNT(*) FROM `data` WHERE `shorturl` = ? ;", array($shorturl));
+
+		// loop until is unique
+		if($result->{"COUNT(*)"} === 1) {
+
+			return TRUE;
+		} else {
+
+			return FALSE;
+		}
 	}
 
 	/*
@@ -390,17 +460,37 @@ class api {
 		}
 
 		// check is unique
-		$result = $this->db->getRow("SELECT COUNT(*) FROM `data` WHERE `shorturl` = ? ;", array($shorten));
-
-		// loop until is unique
-		if($result->{"COUNT(*)"} === "1") {
+		if($this->isPresent($shorten)) {
+			// loop until is unique
 			$this->giveMeShortUrl();
 		} else {
 			$this->shorturl = $shorten;
-		
+
 			return TRUE;
 		}
+	}
 
+	/*
+	 * Check url is valid, and update description
+	 * @return (bool)
+	 */
+	private function giveMeDescription() {
+		if(!empty($this->url)) {
+// TODO: check return header, and check status code (site is valid?)
+			$buffer = file_get_contents($this->url);
+			if(strlen($buffer) > 0){
+				preg_match("/\<title\>(.*)\<\/title\>/", $buffer, $description);
+// TODO: fix this dummy things->
+				if(!empty($description[0])) {
+					$this->description = substr($description[0], 7, -8);
+				}
+
+				return TRUE;
+			} else {
+
+				return FALSE;
+			}
+		}
 	}
 
 

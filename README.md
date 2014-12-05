@@ -29,7 +29,7 @@ Authentification failure is logged for fail2ban support
 
 - robots.txt not support
 
-- description, stats is not working
+- stats is not working
 
 
 
@@ -37,7 +37,7 @@ Authentification failure is logged for fail2ban support
 
 Configuration file in /config/ folder (do it first!)
 
-Automatic: launch ./installer.php
+Automatic: go to ./installer.php page
 
 Manual: see files in manual_installation folder
 
@@ -73,7 +73,11 @@ Response:
 
 ```
 {
-  "data": "vEMQt",
+  "data": {
+    "url": "http://www.yahoo.co.uk/",
+    "shorturl": "GQlIM",
+    "description": "..."
+  },
   "statusCode": 200
 }
 ```
@@ -129,7 +133,10 @@ params: url
 
 action: update
 
-params: url
+params: shorturl/url newShorturl/newUrl
+
+(newShorturl could be empty string (like ""),  for new "random" shorturl)
+
 
 
 ## - delete link
@@ -156,3 +163,6 @@ params: shorturl/url [stats]
 action: get
 
 params: [start], [limit]
+
+
+All shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl"  *only shorturl work for the moment*
