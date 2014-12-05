@@ -187,10 +187,9 @@ class api {
 			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;", 
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
+			$this->return->data->shorturl = $this->shorturl;
+			$this->return->data->description = $this->description;
 			if($result) {
-				$this->return->data->url = $this->url;
-				$this->return->data->shorturl = $this->shorturl;
-				$this->return->data->description = $this->description;
 
 				return TRUE;
 			} else {
