@@ -331,7 +331,12 @@ class api {
 				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
 				array($this->url, $this->ip, $this->description, $this->shorturl, $currentShorturl, $this->username));
 // TODO: WE NEED TO CHECK RESULT
-// WE NEED TO UPDATE STATS TABLE IF SHORTURL IS CHANGED
+				if($currentShorturl != $this->shorturl) {
+// TODO: CHECK RETURN
+					$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;", 
+					array($this->shorturl, $currentShorturl));
+				}
+
 				$this->return->data->url = $this->url;
 				$this->return->data->shorturl = $this->shorturl;
 				$this->return->data->description = $this->description;

@@ -31,6 +31,7 @@ Authentification failure is logged for fail2ban support
 
 - stats is not working
 
+- unified class guest/api (need to separate them for fastest process
 
 
 # Installation:
@@ -153,7 +154,7 @@ params: shorturl/url
 
 action: get
 
-params: shorturl/url [stats]
+params: shorturl/url [stats](bool)
 
 (shorturl is faster than url)
 
@@ -162,7 +163,7 @@ params: shorturl/url [stats]
 
 action: get
 
-params: [start], [limit]
+params: [start](int), [limit](int)
 
 
 All shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl"  *only shorturl work for the moment*
