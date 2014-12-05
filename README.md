@@ -9,7 +9,7 @@ Respect of "Do Not Track"
 
 QRCode support (add .qr)
 
-Authentification is log for fail2ban support
+Authentification failure is logged for fail2ban support
 
 
 
@@ -29,7 +29,7 @@ Authentification is log for fail2ban support
 
 - robots.txt not support
 
-- clicks, description, stats and multiple links return list is not working
+- description, stats is not working
 
 
 
@@ -46,7 +46,7 @@ Manual: see files in manual_installation folder
 
 # Short API usage:
 
-(php client class comming soon), dialog type is json (call & response), 
+(php client class coming soon), dialog type is json (call & response), 
 
 response always contain Standard HTTP Status code (as statusCode field), data return always in data field.
 

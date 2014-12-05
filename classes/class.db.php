@@ -19,7 +19,8 @@ class db {
 		try { 
 			$this->datab = new PDO("mysql:host=".$mysql_server.";dbname=".$mysql_database.";charset=utf8", $mysql_user, $mysql_password, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 			$this->datab->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-			$this->datab->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ); // Result as object
+			$this->datab->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
+			$this->datab->setAttribute(PDO::ATTR_EMULATE_PREPARES, FALSE);
 		} 
 		catch(PDOException $e) { 
 			$this->isConnected = false;

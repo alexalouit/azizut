@@ -162,7 +162,7 @@ class api {
 		exit;
 	}
 
-// TODO: CREATE CRON, AND STOCK LOG IN CACHE (IF IS POSSIBLE) WITH INDEX
+// TODO: CREATE CRON, AND STOCK LOG IN CACHE (IF IS POSSIBLE) WITH INDEX FOR ASYNC PROCESS
 	/*
 	 * Log an guest for stats
 	 * @return (bool)
@@ -171,7 +171,8 @@ class api {
 		$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`) VALUES (?, ?, ?, ?, ?) ;", 
 		array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-// TODO: UPDATE CLICK INT FIELD IN DATA TABLE
+		$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
+		array($this->shorturl));
 	}
 
 	/*
@@ -235,13 +236,14 @@ class api {
 // TODO: ADD FILTER LIKE TOPCLICKED, TIMESTAMP..
 
 			if(!empty($this->request->params->start) AND is_int($this->request->params->start)) {
-				$this->start = $his->request->params->start;
+				$this->start = $this->request->params->start;
 			}
 			if(!empty($this->request->params->limit) AND is_int($this->request->params->limit)) {
-				$this->limit = $his->request->params->limit;
+				$this->limit = $this->request->params->limit;
 			}
+			$limiter = $this->start . ", " . $this->limit;
 // TODO: FIX LIMIT, DON'T WORK
-			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? LIMIT ? , ? ;", 
+			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY timestamp LIMIT ? , ?;", 
 			array($this->username, $this->start, $this->limit));
 
 			if($result) {
@@ -363,7 +365,7 @@ class api {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 			$result = $this->db->getRow("SELECT COUNT(*) FROM `auth` WHERE `username` = ? AND `password` = ? ;", 
 			array($this->request->access->username, $this->request->access->password));
-			if($result->{"COUNT(*)"} === "1") {
+			if($result->{"COUNT(*)"} === 1) {
 				$this->username = $this->request->access->username;
 				$this->password = $this->request->access->password;
 
