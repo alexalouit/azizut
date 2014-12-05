@@ -19,7 +19,7 @@ Authentification failure is logged for fail2ban support
 
 - no cache (memcached & apc planned)
 
-- username and password must be set manually in db (strongly recommended to not store it "in clear", base64 encode with salt minimum..)
+- username and password must be set manually in db (strongly recommended to not store it "as plaintext", base64 encode with salt minimum..)
 
 - no cron (when cache is functional, insertion of visitor logs (stats) must be delayed and processed by packet.)
 

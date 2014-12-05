@@ -216,18 +216,19 @@ class api {
 	private function get() {
 
 		// only use by guests
-// TODO: SEPARATE FUNCTION
+// TODO: SEPARATE CLASSES
 		if($this->guest) {
 				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 				array($this->shorturl));
 
-			if($result && !empty($result->url)) {
+			if(!$result OR empty($result->url)) {
+
+				return FALSE;
+			} else {
 				$this->url = $result->url;
 				$this->return->data = $result;
 
-			} else {
-
-				return FALSE;
+				return TRUE;
 			}
 		}
 
