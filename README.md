@@ -31,7 +31,7 @@ Authentification failure is logged for fail2ban support
 
 - stats is not working
 
-- unified class guest/api (need to separate them for fastest process
+- unified class guest/api (need to separate them for fastest process)
 
 
 # Installation:
@@ -40,10 +40,10 @@ Configuration file in /config/ folder (do it first!)
 
 Automatic: go to ./installer.php page
 
-Manual: see files in manual_installation folder
-
-
-
+If you want to create redirect domain, create (manually) an entry in the database (for the moment, the visits will be recorded)
+```
+INSERT INTO `data` (`shorturl`, `url`, `clicks`, `ip`, `description`, `owner`, `timestamp`) VALUES ('','http://www.zut.io/',0,'127.0.0.1','domain redirect','god','1999-12-31 23:59:59');
+```
 
 # Short API usage:
 
