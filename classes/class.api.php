@@ -36,6 +36,12 @@ class api {
 		require_once dirname( __FILE__ ) . '/../config/config.php';
 
 		$this->timestamp = date("o-m-d H:i:s");
+		$this->ip = $_SERVER['REMOTE_ADDR'];
+		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") {
+			$this->host = "https://" . $_SERVER['HTTP_HOST'] . "/";
+		} else {
+			$this->host = "http://" . $_SERVER['HTTP_HOST'] . "/";
+		}
 
 		$data = file_get_contents("php://input");
 		if(empty($data)) {
@@ -63,8 +69,6 @@ class api {
 			$this->statusCode = 400;
 			exit;
 		}
-
-		$this->ip = $_SERVER['REMOTE_ADDR'];
 
 		switch($this->request->action) {
 			case "insert":
@@ -94,6 +98,8 @@ class api {
 	public function __destruct() {
 		if(!$this->guest) {
 			$this->return->statusCode = $this->statusCode;
+			// return all data?
+			// print json_encode($this);
 			print json_encode($this->return);
 		} else {
 			header("HTTP/1.1 301 Moved Permanently");
@@ -151,12 +157,6 @@ class api {
 	 * @apiReturn: (string) qrcode link
 	 */
 	private function qr() {
-		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") {
-			$this->host = "https://" . $_SERVER['HTTP_HOST'] . "/";
-		} else {
-			$this->host = "http://" . $_SERVER['HTTP_HOST'] . "/";
-		}
-
 		$this->return = "http://chart.apis.google.com/chart?chs=150x150&cht=qr&chld=M&chl=" . $this->host . $this->shorturl;
 		exit;
 	}
@@ -254,6 +254,10 @@ class api {
 			array($this->username, $this->start, $this->limit));
 
 			if($result) {
+				foreach($result as &$row) {
+					$row->link = $this->host . $row->shorturl;
+				}
+
 				$this->return->data = $result;
 
 				return TRUE;
@@ -279,6 +283,7 @@ class api {
 			if($result) {
 				$this->hydrate($result);
 				$this->return->data = $result;
+				$this->return->data->link = $this->host . $result->shorturl;
 
 				return TRUE;
 			} else {
