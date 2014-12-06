@@ -188,6 +188,7 @@ class api {
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
 			$this->return->data->shorturl = $this->shorturl;
+			$this->return->data->link = $this->host . $this->shorturl;
 			$this->return->data->description = $this->description;
 			if($result) {
 
@@ -344,6 +345,7 @@ class api {
 
 				$this->return->data->url = $this->url;
 				$this->return->data->shorturl = $this->shorturl;
+				$this->return->data->link = $this->host . $this->shorturl;
 				$this->return->data->description = $this->description;
 // TODO: FIX THIS, DON'T RETURN BOOL? ->
 				if($result) {
