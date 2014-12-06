@@ -47,9 +47,9 @@ Manual: see files in manual_installation folder
 
 # Short API usage:
 
-(php client class coming soon), dialog type is json (call & response), 
+Dialog type is json (call & response),  php client class -> (https://github.com/alexalouit/azizut-client-class)
 
-response always contain Standard HTTP Status code (as statusCode field), data return always in data field.
+Response always contain Standard HTTP Status code (as statusCode field), data return always in data field.
 
 Call always must contain auth (access field) for the moment, extras params must be in params field.
 
