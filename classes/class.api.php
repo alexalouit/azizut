@@ -238,7 +238,7 @@ class api {
 		if(!empty($this->request->params->shorturl)) {
 			$this->shorturl = $this->request->params->shorturl;
 			$this->shorturl = str_replace(array($this->host, $this->domain, "/"), "", $this->shorturl);
-error_log($this->shorturl);
+
 		}
 		if(!empty($this->request->params->url)) {
 			$this->url = $this->request->params->url;
