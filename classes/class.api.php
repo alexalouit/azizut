@@ -11,6 +11,7 @@ class api {
 	private $guest = TRUE;
 	private $return = "";
 	private $host = NULL;
+	private $domain = NULL;
 	private $headers = NULL;
 	private $ip = "unknown";
 	private $clicks = 0;
@@ -37,10 +38,11 @@ class api {
 
 		$this->timestamp = date("o-m-d H:i:s");
 		$this->ip = $_SERVER['REMOTE_ADDR'];
+		$this->domain =  $_SERVER['HTTP_HOST'] . "/";
 		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") {
-			$this->host = "https://" . $_SERVER['HTTP_HOST'] . "/";
+			$this->host = "https://" . $this->domain;
 		} else {
-			$this->host = "http://" . $_SERVER['HTTP_HOST'] . "/";
+			$this->host = "http://" . $this->domain;
 		}
 
 		$data = file_get_contents("php://input");
@@ -235,6 +237,8 @@ class api {
 		// use by api
 		if(!empty($this->request->params->shorturl)) {
 			$this->shorturl = $this->request->params->shorturl;
+			$this->shorturl = str_replace(array($this->host, $this->domain, "/"), "", $this->shorturl);
+error_log($this->shorturl);
 		}
 		if(!empty($this->request->params->url)) {
 			$this->url = $this->request->params->url;

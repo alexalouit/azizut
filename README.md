@@ -166,4 +166,4 @@ action: get
 params: [start](int), [limit](int)
 
 
-All shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl"  *only shorturl work for the moment*
+Shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl"
