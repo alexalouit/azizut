@@ -255,7 +255,7 @@ class api {
 			}
 			$limiter = $this->start . ", " . $this->limit;
 // TODO: FIX LIMIT, DON'T WORK
-			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY timestamp LIMIT ? , ?;", 
+			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ?;", 
 			array($this->username, $this->start, $this->limit));
 
 			if($result) {
