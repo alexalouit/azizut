@@ -44,8 +44,8 @@ DROP TABLE IF EXISTS `stats`;
 CREATE TABLE `stats` (
   `shorturl` varchar(8) NOT NULL DEFAULT '',
   `ip` varchar(64) NOT NULL DEFAULT '',
-  `useragent` varchar(99) NOT NULL DEFAULT '',
-  `referer` varchar(99) NOT NULL DEFAULT '',
+  `useragent` varchar(255) NOT NULL DEFAULT '',
+  `referer` varchar(255) NOT NULL DEFAULT '',
   `timestamp` datetime NOT NULL,
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
@@ -57,8 +57,8 @@ DROP TABLE IF EXISTS `stats_deleted`;
 CREATE TABLE `stats_deleted` (
   `shorturl` varchar(8) NOT NULL DEFAULT '',
   `ip` varchar(64) NOT NULL DEFAULT '',
-  `useragent` varchar(99) NOT NULL DEFAULT '',
-  `referer` varchar(99) NOT NULL DEFAULT '',
+  `useragent` varchar(255) NOT NULL DEFAULT '',
+  `referer` varchar(255) NOT NULL DEFAULT '',
   `timestamp` datetime NOT NULL,
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
