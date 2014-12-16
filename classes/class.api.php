@@ -254,7 +254,6 @@ class api {
 				$this->limit = $this->request->params->limit;
 			}
 			$limiter = $this->start . ", " . $this->limit;
-// TODO: FIX LIMIT, DON'T WORK
 			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ?;", 
 			array($this->username, $this->start, $this->limit));
 
@@ -264,6 +263,26 @@ class api {
 				}
 
 				$this->return->data = $result;
+
+				// statisctics extrapolation for all links
+				if(isset($this->request->params->stats) && $this->request->params->stats) {
+					$this->return->data["stats"]->per_month = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
+					array($this->username)); 
+
+// TODO: ADD BY DAYS OF WEEK
+
+					$this->return->data["stats"]->per_day = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
+					array($this->username)); 
+
+					$this->return->data["stats"]->per_hour = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
+					array($this->username)); 
+
+					$this->return->data["stats"]->per_referer = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`referer` ;",
+					array($this->username)); 
+
+					$this->return->data["stats"]->per_useragent = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`useragent` ;",
+					array($this->username)); 
+				}
 
 				return TRUE;
 			} else {
@@ -281,14 +300,30 @@ class api {
 				array($this->url, $this->username));
 			}
 
-			if(isset($this->request->params->stats) && !$this->request->params->stats) {
-// TODO: CATCH ALL SHORTURL STATS, AND RETURN IT FORMATED FOR EXTRAPOLATION
-			}
-
 			if($result) {
 				$this->hydrate($result);
 				$this->return->data = $result;
 				$this->return->data->link = $this->host . $result->shorturl;
+
+			// statisctics extrapolation for one link
+			if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
+				$this->return->data->stats->per_month = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp` FROM `stats` WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
+				array($this->shorturl)); 
+
+// TODO: ADD BY DAYS OF WEEK
+
+				$this->return->data->stats->per_day = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp` FROM `stats` WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
+				array($this->shorturl)); 
+
+				$this->return->data->stats->per_hour = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp` FROM `stats` WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
+				array($this->shorturl)); 
+
+				$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` WHERE `shorturl`= ? GROUP BY `referer` ;",
+				array($this->shorturl)); 
+
+				$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` WHERE `shorturl`= ? GROUP BY `useragent` ;",
+				array($this->shorturl)); 
+			}
 
 				return TRUE;
 			} else {

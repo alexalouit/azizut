@@ -29,8 +29,6 @@ Authentification failure is logged for fail2ban support
 
 - robots.txt not support
 
-- stats is not working
-
 - unified class guest/api (need to separate them for fastest process)
 
 
