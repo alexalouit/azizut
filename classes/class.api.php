@@ -254,7 +254,7 @@ class api {
 				$this->limit = $this->request->params->limit;
 			}
 			$limiter = $this->start . ", " . $this->limit;
-			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ?;", 
+			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ? ;", 
 			array($this->username, $this->start, $this->limit));
 
 			if($result) {
@@ -267,30 +267,43 @@ class api {
 
 				// statisctics extrapolation for all links
 				if(isset($this->request->params->stats) && $this->request->params->stats) {
-					$this->return->data["stats"]->per_month = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, MONTH(`stats`.`timestamp`) AS `month` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
-					array($this->username)); 
+					$per_monthResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, MONTH(`stats`.`timestamp`) AS `month` FROM `stats` 
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
+						array($this->username)); 
+					foreach($per_monthResult as $row) {
+						$this->return->data["stats"]->per_month[$row->month] = $row->value;
+					}
 
-					$this->return->data["stats"]->per_dayOfWeek = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAYOFWEEK(`stats`.`timestamp`) AS `dayOfWeek` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY DAYOFWEEK(`stats`.`timestamp`) ;",
-					array($this->username));
+					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAYOFWEEK(`stats`.`timestamp`) AS `dayOfWeek` FROM `stats` 
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY DAYOFWEEK(`stats`.`timestamp`) ;",
+						array($this->username));
+					foreach($per_dayOfWeekResult as $row) {
+						$this->return->data["stats"]->per_dayOfWeek[$row->dayOfWeek] = $row->value;
+					}
 
-					$this->return->data["stats"]->per_day = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAY(`stats`.`timestamp`) AS `day` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
-					array($this->username));
+					$per_dayResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAY(`stats`.`timestamp`) AS `day` FROM `stats` 
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
+						array($this->username));
+					foreach($per_dayResult as $row) {
+						$this->return->data["stats"]->per_day[$row->day] = $row->value;
+					}
 
-					$this->return->data["stats"]->per_hour = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, HOUR(`stats`.`timestamp`) AS `hour` FROM `stats` 
+					$per_hourResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, HOUR(`stats`.`timestamp`) AS `hour` FROM `stats` 
 					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY 
-					YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
-					array($this->username));
+						YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
+						array($this->username));
+					foreach($per_hourResult as $row) {
+						$this->return->data["stats"]->per_hour[$row->hour] = $row->value;
+					}
+// TODO: (bug) we have result as last entry on sub-sub object pointer ($this->return->data)
 
 					$this->return->data["stats"]->per_referer = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`referer` ;",
-					array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`referer` ;",
+						array($this->username));
 
 					$this->return->data["stats"]->per_useragent = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`useragent` ;",
-					array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`useragent` ;",
+						array($this->username));
 				}
 
 				return TRUE;
@@ -317,27 +330,39 @@ class api {
 
 			// statisctics extrapolation for one link
 			if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
-				$this->return->data->stats->per_month = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
+				$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
 				array($this->shorturl));
+			foreach($per_monthResult as $row) {
+				$this->return->data->stats->per_month[$row->month] = $row->value;
+			}
 
-				$this->return->data->per_dayOfWeek = $this->db->getRow("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
+			$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY DAYOFWEEK(`timestamp`) ;",
 				array($this->username));
+			foreach($per_dayOfWeekResult as $row) {
+				$this->return->data->stats->per_dayOfWeek[$row->dayOfWeek] = $row->value;
+			}
 
-				$this->return->data->stats->per_day = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
+			$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
 				array($this->shorturl));
+			foreach($per_dayResult as $row) {
+				$this->return->data->stats->per_day[$row->day] = $row->value;
+			}
 
-				$this->return->data->stats->per_hour = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
+			$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
 				array($this->shorturl));
+			foreach($per_hourResult as $row) {
+				$this->return->data->stats->per_hour[$row->hour] = $row->value;
+			}
 
-				$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
+			$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY `referer` ;",
 				array($this->shorturl));
 
-				$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
+			$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
 				WHERE `shorturl`= ? GROUP BY `useragent` ;",
 				array($this->shorturl));
 			}
