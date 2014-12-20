@@ -5,10 +5,8 @@
  */
 
 class api {
-
 	private $request = NULL;
 	private $statusCode = 200;
-	private $guest = TRUE;
 	private $return = "";
 	private $host = NULL;
 	private $domain = NULL;
@@ -27,14 +25,20 @@ class api {
 	private $start = 0;
 	private $limit = 500;
 	private $db = NULL;
+	private $cache = NULL;
+	/*
+	 * Class autoloader
+	 */
+	private function __autoload($classname) {
+		$filename = "class." . $classname . ".php";
+		include_once($filename);
+	}
 
 	/*
 	 * Constructor, dispatcher (build the way)
 	 */
 	public function __construct() {
-// TODO: DISPACT REQUIRED FILES CORRECTLY FOR FASTER PROCESS
-//		require_once $_SERVER['DOCUMENT_ROOT'].'/classes/class.cache.php';
-		require_once dirname( __FILE__ ) . '/../config/config.php';
+		require_once './config/config.php';
 
 		$this->timestamp = date("o-m-d H:i:s");
 		$this->ip = $_SERVER['REMOTE_ADDR'];
@@ -46,13 +50,7 @@ class api {
 		}
 
 		$data = file_get_contents("php://input");
-		if(empty($data)) {
-			$this->serve();
-		}
-
-		$this->guest = FALSE;
-
-		if(!$this->request = json_decode($data)) {
+		if(empty($data) OR !$this->request = json_decode($data)) {
 			$this->statusCode = 400;
 
 			exit;
@@ -70,6 +68,14 @@ class api {
 		if(empty($this->request->action)) {
 			$this->statusCode = 400;
 			exit;
+		}
+
+		if(!empty($this->request->params->shorturl)) {
+			$shorturl = $this->request->params->shorturl;
+			$shorturl = str_replace(array($this->host, $this->domain, "/"), "", $shorturl);
+			if(preg_match('"[0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z]"', $shorturl)) {
+				$this->shorturl = $shorturl;
+			}
 		}
 
 		switch($this->request->action) {
@@ -98,86 +104,17 @@ class api {
 	 * @return: http header for guests, json data for API users
 	 */
 	public function __destruct() {
-		if(!$this->guest) {
-			$this->return->statusCode = $this->statusCode;
-			// return all data?
-			// print json_encode($this);
-			print json_encode($this->return);
-		} else {
-			header("HTTP/1.1 301 Moved Permanently");
-			header("Location: {$this->return}");
-		}
+		$this->return->statusCode = $this->statusCode;
+		// return all data?
+		// print json_encode($this);
+		print json_encode($this->return);
 
 		exit;
 	}
 
-	private function serve() {
-		$this->shorturl = $_SERVER['REQUEST_URI'];
-		$this->shorturl = substr($this->shorturl, 1);
-		if(substr($this->shorturl, -3) == ".qr") {
-			$qrcode = TRUE;
-			$this->shorturl = substr($this->shorturl, 0, -3);
-		}
-
-		require_once dirname( __FILE__ ) . '/class.db.php';
-		$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-
-		if(!$this->get()) {
-
-			$this->return = "/error/404.html";
-
-			exit;
-		} else {
-			if(isset($_SERVER['HTTP_DNT']) && $_SERVER['HTTP_DNT'] == 1) {
-			} else { 
-				if(!empty($_SERVER['REMOTE_ADDR'])) {
-					$this->ip = $_SERVER['REMOTE_ADDR'];
-				}
-				if(!empty($_SERVER['HTTP_REFERER'])) {
-					$this->referer = $_SERVER['HTTP_REFERER'];
-				}
-				if(!empty($_SERVER['HTTP_USER_AGENT'])) {
-					$this->useragent = $_SERVER['HTTP_USER_AGENT'];
-				}
-			}
-
-			if(isset($qrcode) && $qrcode) {
-				$this->qr();
-			}
-
-			$this->log();
-
-			$this->return = $this->url;
-			exit;
-		}
-
-	}
 
 	/*
-	 * QRCode returner
-	 * @return: (bool)
-	 * @apiReturn: (string) qrcode link
-	 */
-	private function qr() {
-		$this->return = "http://chart.apis.google.com/chart?chs=150x150&cht=qr&chld=M&chl=" . $this->host . $this->shorturl;
-		exit;
-	}
-
-// TODO: CREATE CRON, AND STOCK LOG IN CACHE (IF IS POSSIBLE) WITH INDEX FOR ASYNC PROCESS
-	/*
-	 * Log an guest for stats
-	 * @return (bool)
-	 */
-	private function log() {
-		$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`) VALUES (?, ?, ?, ?, ?) ;", 
-		array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp));
-// TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-		$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
-		array($this->shorturl));
-	}
-
-	/*
-	 * Insert a link
+	 * Insert a link in db and cache
 	 * @return: (bool)
 	 * @apiReturn: (string) shorturl
 	 */
@@ -193,6 +130,9 @@ class api {
 			$this->return->data->link = $this->host . $this->shorturl;
 			$this->return->data->description = $this->description;
 			if($result) {
+				if(!is_null(CACHE_TYPE) && !$this->cache->insert($this)) {
+					error_log("Error, I failed to insert a link in the cache.");
+				}
 
 				return TRUE;
 			} else {
@@ -216,32 +156,15 @@ class api {
 	 * @apiReturn: (object) result(s)
 	 */
 	private function get() {
-
-		// only use by guests
-// TODO: SEPARATE CLASSES
-		if($this->guest) {
-				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
-				array($this->shorturl));
-
-			if(!$result OR empty($result->url)) {
-
-				return FALSE;
-			} else {
-				$this->url = $result->url;
-				$this->return->data = $result;
-
-				return TRUE;
-			}
-		}
-
-		// use by api
-		if(!empty($this->request->params->shorturl)) {
-			$this->shorturl = $this->request->params->shorturl;
-			$this->shorturl = str_replace(array($this->host, $this->domain, "/"), "", $this->shorturl);
-
-		}
 		if(!empty($this->request->params->url)) {
 			$this->url = $this->request->params->url;
+		}
+
+		if(isset($this->request->params->period) && 
+			preg_match('"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"', $this->request->params->period)) {
+		} else {
+			$periodStart = date("Y") . "-01-01 00:00:00";
+			$periodEnd = date("Y")+1 . "-01-01 00:00:00";
 		}
 
 		if(empty($this->shorturl) && empty($this->url)) {
@@ -263,47 +186,51 @@ class api {
 				}
 
 				$this->return->data = $result;
-// TODO: ONLY CURRENT YEARS? FOR CERTAIN CONTENT
 
 				// statisctics extrapolation for all links
 				if(isset($this->request->params->stats) && $this->request->params->stats) {
 					$per_monthResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, MONTH(`stats`.`timestamp`) AS `month` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
-						array($this->username)); 
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
+						array($this->username, $periodStart, $periodEnd));
 					foreach($per_monthResult as $row) {
 						$this->return->data["stats"]->per_month[$row->month] = $row->value;
 					}
 
 					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAYOFWEEK(`stats`.`timestamp`) AS `dayOfWeek` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY DAYOFWEEK(`stats`.`timestamp`) ;",
-						array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY DAYOFWEEK(`stats`.`timestamp`) ;",
+						array($this->username, $periodStart, $periodEnd));
 					foreach($per_dayOfWeekResult as $row) {
 						$this->return->data["stats"]->per_dayOfWeek[$row->dayOfWeek] = $row->value;
 					}
 
 					$per_dayResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAY(`stats`.`timestamp`) AS `day` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
-						array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
+						array($this->username, $periodStart, $periodEnd));
 					foreach($per_dayResult as $row) {
 						$this->return->data["stats"]->per_day[$row->day] = $row->value;
 					}
 
 					$per_hourResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, HOUR(`stats`.`timestamp`) AS `hour` FROM `stats` 
-					LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY 
-						YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
-						array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
+						array($this->username, $periodStart, $periodEnd));
 					foreach($per_hourResult as $row) {
 						$this->return->data["stats"]->per_hour[$row->hour] = $row->value;
 					}
 // TODO: (bug) we have result as last entry on sub-sub object pointer ($this->return->data)
 
 					$this->return->data["stats"]->per_referer = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`referer` ;",
-						array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY `stats`.`referer` ;",
+						array($this->username, $periodStart, $periodEnd));
 
 					$this->return->data["stats"]->per_useragent = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? GROUP BY `stats`.`useragent` ;",
-						array($this->username));
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+						GROUP BY `stats`.`useragent` ;",
+						array($this->username, $periodStart, $periodEnd));
 				}
 
 				return TRUE;
@@ -314,57 +241,63 @@ class api {
 			}
 
 		} elseif(!empty($this->shorturl) OR !empty($this->url)) {
-			if(!empty($this->shorturl)) {
-				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", 
-				array($this->shorturl, $this->username));
-			} elseif(!empty($this->url)) {
-				$result = $this->db->getRow("SELECT * FROM `data` WHERE `url` = ? AND `owner` = ? ;", 
-				array($this->url, $this->username));
+				if(!empty($this->shorturl)) {
+					$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", 
+						array($this->shorturl, $this->username));
+				} elseif(!empty($this->url)) {
+					$result = $this->db->getRow("SELECT * FROM `data` WHERE `url` = ? AND `owner` = ? ;", 
+						array($this->url, $this->username));
+				}
 			}
 
 			if($result) {
 				$this->hydrate($result);
 				$this->return->data = $result;
 				$this->return->data->link = $this->host . $result->shorturl;
-// TODO: ONLY CURRENT YEARS? FOR CERTAIN CONTENT
+
+			
 
 			// statisctics extrapolation for one link
 			if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
 				$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
-				array($this->shorturl));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
+				array($this->shorturl, $periodStart, $periodEnd));
 			foreach($per_monthResult as $row) {
 				$this->return->data->stats->per_month[$row->month] = $row->value;
 			}
 
 			$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY DAYOFWEEK(`timestamp`) ;",
-				array($this->username));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+				GROUP BY DAYOFWEEK(`timestamp`) ;",
+				array($this->shorturl, $periodStart, $periodEnd));
 			foreach($per_dayOfWeekResult as $row) {
 				$this->return->data->stats->per_dayOfWeek[$row->dayOfWeek] = $row->value;
 			}
 
 			$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
-				array($this->shorturl));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
+				array($this->shorturl, $periodStart, $periodEnd));
 			foreach($per_dayResult as $row) {
 				$this->return->data->stats->per_day[$row->day] = $row->value;
 			}
 
 			$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
-				array($this->shorturl));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
 			foreach($per_hourResult as $row) {
 				$this->return->data->stats->per_hour[$row->hour] = $row->value;
 			}
 
 			$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY `referer` ;",
-				array($this->shorturl));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `referer` ;",
+				array($this->shorturl, $periodStart, $periodEnd));
 
 			$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
-				WHERE `shorturl`= ? GROUP BY `useragent` ;",
-				array($this->shorturl));
+				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `useragent` ;",
+				array($this->shorturl, $periodStart, $periodEnd));
+
 			}
 
 				return TRUE;
@@ -383,11 +316,11 @@ class api {
 	}
 
 	/*
-	 * Update a link
+	 * Update a link in db and cache
 	 * @return: (bool)
 	 */
 	private function update() {
-		if(empty($this->request->params->shorturl) && empty($this->request->params->url)) {
+		if(empty($this->shorturl) && empty($this->request->params->url)) {
 
 			$this->statusCode = 405;
 			exit;
@@ -415,9 +348,17 @@ class api {
 					$this->giveMeDescription();
 				}
 
+				if(!is_null(CACHE_TYPE) && !$this->cache->delete($currentShorturl)) {
+					error_log("I failed to delete a link in the cache.");
+				}
+				if(!is_null(CACHE_TYPE) && !$this->cache->insert($this)) {
+					error_log("I failed to insert a link in the cache.");
+				}
+
 				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
 				array($this->url, $this->ip, $this->description, $this->shorturl, $currentShorturl, $this->username));
 // TODO: WE NEED TO CHECK RESULT
+
 				if($currentShorturl != $this->shorturl) {
 // TODO: CHECK RETURN
 					$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;", 
@@ -464,17 +405,20 @@ class api {
 	}
 
 	/*
-	 * Delete an shortul, and it's stats
+	 * Delete an shorturl, and it's stats from db and cache
 	 * @return (bool)
 	 */
 	private function delete() {
-		if(empty($this->request->params->shorturl) && empty($this->request->params->url)) {
+		if(empty($this->shorturl) && empty($this->request->params->url)) {
 
 			$this->statusCode = 405;
 			exit;
 		}
 
 		if($this->get()) {
+			if(!is_null(CACHE_TYPE) && !$this->cache->delete($this)) {
+				error_log("I failed to delete a link in the cache.");
+			}
 			// Data is gold, we keep it!
 			$result[] = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
 			$result[] = $this->db->deleteRow("DELETE FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
@@ -499,14 +443,17 @@ class api {
 
 			return FALSE;
 		} else {
-			require_once dirname( __FILE__ ) . '/class.db.php';
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 			$result = $this->db->getRow("SELECT COUNT(*) FROM `auth` WHERE `username` = ? AND `password` = ? ;", 
 			array($this->request->access->username, $this->request->access->password));
+
 			if($result->{"COUNT(*)"} === 1) {
 				$this->username = $this->request->access->username;
 				$this->password = $this->request->access->password;
 
+				if(!is_null(CACHE_TYPE)) {
+					$this->cache = new cache();
+				}
 				return TRUE;
 			} else {
 
@@ -527,6 +474,7 @@ class api {
 			$shorturl = $this->shorturl;
 		}
 
+// TODO: add cache
 		$result = $this->db->getRow("SELECT COUNT(*) FROM `data` WHERE `shorturl` = ? ;", array($shorturl));
 
 		// loop until is unique

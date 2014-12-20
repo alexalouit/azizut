@@ -5,7 +5,6 @@
  * inspired from Elias Van Ootegem
  */
 
-
 class db {
 	public $isConnected;
 	protected $datab;
