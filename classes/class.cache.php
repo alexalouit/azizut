@@ -9,6 +9,12 @@ class cache {
 	 * Cache expiration, default to 3 days
 	 */
 	private $ttl = 259200;
+	private $server = "localhost";
+	private $port = 11211;
+	private $qpp = 50;
+	private $index = array();
+	private $memcached = FALSE;
+	private $salt = "azizut_";
 	/*
 	 * Cache key
 	 */
@@ -18,24 +24,36 @@ class cache {
 	 */
 	public $data = NULL;
 
-	/*
-	 * Class autoloader
-	 */
-	private function __autoload($classname) {
-		$filename = "class." . $classname . ".php";
-		include_once($filename);
-	}
+	public $type = NULL;
 
 	/*
 	 * Constructor
 	 */
 	public function __construct() {
+		if(!empty(MEMCACHED_SERVER)) {
+			$this->server = MEMCACHED_SERVER;
+		}
+		if(!empty(MEMCACHED_PORT)) {
+			$this->port = MEMCACHED_PORT;
+		}
+		if(!empty(QPP)) {
+			$this->qpp = QPP;
+		}
+		if(!empty(MEMCACHED_TTL)) {
+			$this->ttl = MEMCACHED_TTL;
+		}
+
+		$this->memcached = new Memcached();
+		if(!$this->memcached->addServer($this->server, $this->port)) {
+			return FALSE;
+		}
 	}
 
 	/*
 	 * Destructor
 	 */
 	public function __destruct() {
+		$this->memcached->quit();
 	}
 
 	/*
@@ -43,39 +61,26 @@ class cache {
 	 * @return: (bool)/data
 	 */
 	public function get() {
-		switch(CACHE_TYPE) {
-			case "apc":
-			break;
-			case "memcached":
-			break;
-		}
-	}
-
-	/*
-	 * Get asynchronous job for cron
-	 * @return: (bool)/data
-	 */
-	public function getAsync() {
-		foreach($i <= QPP) {
-			switch(CACHE_TYPE) {
-				case "apc":
-				break;
-				case "memcached":
-				break;
+		if($this->type == "log") {
+			$return = array();
+			$this->index = $this->memcached->get($this->salt . "index");
+			$i = 0;
+			error_log("Search index..");
+			foreach($this->index as &$key) {
+				if($i >= $this->qpp) {
+					break;
+				}
+				unset($key);
+				$return[] = $this->memcached->get($this->salt . $key);
+				$this->memcached->delete($this->salt . $key);
+				$i++;
 			}
-		}
-	}
-
-	/*
-	 * Insert an asynchronous job for cron
-	 * @return: (bool)
-	 */
-	public function insertAsync() {
-		switch(CACHE_TYPE) {
-			case "apc":
-			break;
-			case "memcached":
-			break;
+			error_log("Update index.. (" . $i . "/" . $i+count($this->index) . ")");
+			$this->memcached->set($this->salt . "index", $this->index, $this->ttl);
+			return $return;
+			
+		} elseif($this->type == "redirect") {
+			return  $this->memcached->get($this->salt . $this->key);
 		}
 	}
 
@@ -84,11 +89,26 @@ class cache {
 	 * @return: (bool)
 	 */
 	public function insert() {
-		switch(CACHE_TYPE) {
-			case "apc":
-			break;
-			case "memcached":
-			break;
+		if($this->type == "log") {
+			$this->key = uniqid();
+			$this->index = $this->memcached->get($this->salt . "index");
+			$this->index[] = $this->key;
+			if(!$this->memcached->set($this->salt . "index", $this->index, $this->ttl)) {
+				error_log("Error cache when insert index.");
+				return FALSE;
+			} else {
+				error_log("Insert index for as " . $this->key);
+				if(!$this->memcached->set($this->salt . $this->key, $this->data, $this->ttl)) {
+					error_log("Error cache when insert log.");
+					return FALSE;
+				} else {
+					error_log("Insert log for " . $this->key);
+					return TRUE;
+				}
+			}
+		} elseif($this->type == "redirect") {
+			error_log("Insert redirect " . $this->data . " from /" . $this->key);
+			return $this->memcached->set($this->salt . $this->key, $this->data, $this->ttl);
 		}
 	}
 
@@ -97,12 +117,8 @@ class cache {
 	 * @return: (bool)
 	 */
 	public function delete() {
-		switch(CACHE_TYPE) {
-			case "apc":
-			break;
-			case "memcached":
-			break;
-		}
+		error_log("Delete redirect /" . $this->key);
+		return $this->memcached->delete($this->salt . $this->key);
 	}
 
 

@@ -4,6 +4,14 @@
  * @author Alex Alouit <alexandre.alouit@gmail.com>
  */
 
+/*
+ * Class autoloader
+ */
+function __autoload($classname) {
+	$filename = "class." . $classname . ".php";
+	include_once($filename);
+}
+
 class api {
 	private $request = NULL;
 	private $statusCode = 200;
@@ -26,13 +34,6 @@ class api {
 	private $limit = 500;
 	private $db = NULL;
 	private $cache = NULL;
-	/*
-	 * Class autoloader
-	 */
-	private function __autoload($classname) {
-		$filename = "class." . $classname . ".php";
-		include_once($filename);
-	}
 
 	/*
 	 * Constructor, dispatcher (build the way)
@@ -72,8 +73,8 @@ class api {
 
 		if(!empty($this->request->params->shorturl)) {
 			$shorturl = $this->request->params->shorturl;
-			$shorturl = str_replace(array($this->host, $this->domain, "/"), "", $shorturl);
-			if(preg_match('"[0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z]"', $shorturl)) {
+			$shorturl = str_replace(array($this->host, $this->domain, "/", ".qr"), "", $shorturl);
+			if(preg_match("(\A[0-9a-zA-Z]{5}\z)", $shorturl)) {
 				$this->shorturl = $shorturl;
 			}
 		}
@@ -101,7 +102,7 @@ class api {
 
 	/*
 	 * Desctructor, return the content
-	 * @return: http header for guests, json data for API users
+	 * @return: json data for API users
 	 */
 	public function __destruct() {
 		$this->return->statusCode = $this->statusCode;
@@ -125,13 +126,18 @@ class api {
 			$this->giveMeDescription();
 			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;", 
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
-// TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
 			$this->return->data->shorturl = $this->shorturl;
 			$this->return->data->link = $this->host . $this->shorturl;
 			$this->return->data->description = $this->description;
 			if($result) {
-				if(!is_null(CACHE_TYPE) && !$this->cache->insert($this)) {
-					error_log("Error, I failed to insert a link in the cache.");
+				if(CACHE) {
+					$this->cache = new cache();
+					$this->cache->type = "redirect";
+					$this->cache->key = $this->shorturl;
+					$this->cache->data = $this->url;
+					if(!$this->cache->insert()) {
+						error_log("Error, I failed to insert a link in the cache.");
+					}
 				}
 
 				return TRUE;
@@ -248,57 +254,55 @@ class api {
 					$result = $this->db->getRow("SELECT * FROM `data` WHERE `url` = ? AND `owner` = ? ;", 
 						array($this->url, $this->username));
 				}
-			}
+
 
 			if($result) {
 				$this->hydrate($result);
 				$this->return->data = $result;
 				$this->return->data->link = $this->host . $result->shorturl;
 
-			
+				// statisctics extrapolation for one link
+				if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
+					$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
+						array($this->shorturl, $periodStart, $periodEnd));
+					foreach($per_monthResult as $row) {
+						$this->return->data->stats->per_month[$row->month] = $row->value;
+					}
 
-			// statisctics extrapolation for one link
-			if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
-				$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
-				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
-				array($this->shorturl, $periodStart, $periodEnd));
-			foreach($per_monthResult as $row) {
-				$this->return->data->stats->per_month[$row->month] = $row->value;
-			}
+					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+						GROUP BY DAYOFWEEK(`timestamp`) ;",
+						array($this->shorturl, $periodStart, $periodEnd));
+					foreach($per_dayOfWeekResult as $row) {
+						$this->return->data->stats->per_dayOfWeek[$row->dayOfWeek] = $row->value;
+					}
 
-			$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
-				GROUP BY DAYOFWEEK(`timestamp`) ;",
-				array($this->shorturl, $periodStart, $periodEnd));
-			foreach($per_dayOfWeekResult as $row) {
-				$this->return->data->stats->per_dayOfWeek[$row->dayOfWeek] = $row->value;
-			}
+					$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
+						array($this->shorturl, $periodStart, $periodEnd));
+					foreach($per_dayResult as $row) {
+						$this->return->data->stats->per_day[$row->day] = $row->value;
+					}
 
-			$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
-				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
-				array($this->shorturl, $periodStart, $periodEnd));
-			foreach($per_dayResult as $row) {
-				$this->return->data->stats->per_day[$row->day] = $row->value;
-			}
+					$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
+						array($this->shorturl, $periodStart, $periodEnd));
+					foreach($per_hourResult as $row) {
+						$this->return->data->stats->per_hour[$row->hour] = $row->value;
+					}
 
-			$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
-				GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
-			foreach($per_hourResult as $row) {
-				$this->return->data->stats->per_hour[$row->hour] = $row->value;
-			}
+					$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `referer` ;",
+						array($this->shorturl, $periodStart, $periodEnd));
 
-			$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `referer` ;",
-				array($this->shorturl, $periodStart, $periodEnd));
-
-			$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
-				WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `useragent` ;",
-				array($this->shorturl, $periodStart, $periodEnd));
-
-			}
+					$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `useragent` ;",
+						array($this->shorturl, $periodStart, $periodEnd));
+				}
 
 				return TRUE;
 			} else {
@@ -348,21 +352,30 @@ class api {
 					$this->giveMeDescription();
 				}
 
-				if(!is_null(CACHE_TYPE) && !$this->cache->delete($currentShorturl)) {
-					error_log("I failed to delete a link in the cache.");
-				}
-				if(!is_null(CACHE_TYPE) && !$this->cache->insert($this)) {
-					error_log("I failed to insert a link in the cache.");
-				}
-
 				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
 				array($this->url, $this->ip, $this->description, $this->shorturl, $currentShorturl, $this->username));
-// TODO: WE NEED TO CHECK RESULT
 
-				if($currentShorturl != $this->shorturl) {
-// TODO: CHECK RETURN
-					$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;", 
-					array($this->shorturl, $currentShorturl));
+				if($result) {
+					if(CACHE) {
+						$this->cache = new cache();
+						$this->cache->type = "redirect";
+						$this->cache->key = $currentShorturl;
+						if($this->cache->get()) {
+							if(!$this->cache->delete()) {
+								error_log("I failed to delete a link in the cache.");
+							}
+						}
+						$this->cache->key = $this->shorturl;
+						$this->cache->data = $this->url;
+						if(!$this->cache->insert()) {
+							error_log("I failed to insert a link in the cache.");
+						}
+					}
+
+					if($this->shorturl != $currentShorturl) {
+						$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;", 
+							array($this->shorturl, $currentShorturl));
+					}
 				}
 
 				$this->return->data->url = $this->url;
@@ -416,16 +429,30 @@ class api {
 		}
 
 		if($this->get()) {
-			if(!is_null(CACHE_TYPE) && !$this->cache->delete($this)) {
-				error_log("I failed to delete a link in the cache.");
+			if(CACHE) {
+				$this->cache = new cache();
+				$this->cache->type = "redirect";
+				$this->cache->key = $this->shorturl;
+				if($this->cache->get()) {
+					if(!$this->cache->delete()) {
+						error_log("I failed to delete a link in the cache.");
+					}
+				}
 			}
+
 			// Data is gold, we keep it!
-			$result[] = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
-			$result[] = $this->db->deleteRow("DELETE FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
+			$result1 = $this->db->insertRow("INSERT INTO `data_deleted` SELECT * FROM data WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
+			$result2 = $this->db->deleteRow("DELETE FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", array($this->shorturl, $this->username));
 // TODO: WE NEED TO PREVENT STRONG QUERY, USE CACHE+CRON FOR ASYNC QUERIES
-			$result[] = $this->db->insertRow("INSERT INTO `stats_deleted` SELECT * FROM stats WHERE `shorturl` = ? ;", array($this->shorturl));
-			$result[] = $this->db->deleteRow("DELETE FROM `stats` WHERE `shorturl` = ? ;", array($this->shorturl));
-// TODO: WE NEED TO CHECK RESULT <-
+			$result3 = $this->db->insertRow("INSERT INTO `stats_deleted` SELECT * FROM stats WHERE `shorturl` = ? ;", array($this->shorturl));
+			$result4 = $this->db->deleteRow("DELETE FROM `stats` WHERE `shorturl` = ? ;", array($this->shorturl));
+			if($result1 && $result2 && $result3 && $result4) {
+				$this->statusCode = 200;
+				return TRUE;
+			} else {
+				$this->statusCode = 202;
+				return FALSE;
+			}
 
 		} else {
 
@@ -447,13 +474,10 @@ class api {
 			$result = $this->db->getRow("SELECT COUNT(*) FROM `auth` WHERE `username` = ? AND `password` = ? ;", 
 			array($this->request->access->username, $this->request->access->password));
 
-			if($result->{"COUNT(*)"} === 1) {
+			if($result->{"COUNT(*)"} == 1) {
 				$this->username = $this->request->access->username;
 				$this->password = $this->request->access->password;
 
-				if(!is_null(CACHE_TYPE)) {
-					$this->cache = new cache();
-				}
 				return TRUE;
 			} else {
 
@@ -478,7 +502,7 @@ class api {
 		$result = $this->db->getRow("SELECT COUNT(*) FROM `data` WHERE `shorturl` = ? ;", array($shorturl));
 
 		// loop until is unique
-		if($result->{"COUNT(*)"} === 1) {
+		if($result->{"COUNT(*)"} == 1) {
 
 			return TRUE;
 		} else {
