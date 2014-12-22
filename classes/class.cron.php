@@ -27,17 +27,17 @@ class cron {
 			exit;
 		}
 		if(!ASYNC) {
-			error_log("Async off. What am i supposed to do?");
+			error_log("Async off. What am i supposed to do?\n", 3, DEBUG);
 			exit;
 		}
 
 		$this->cache->type = "log";
 		$result = $this->cache->get();
 		if(!isset($result) OR $result === FALSE) {
-				error_log("Error with cache (index is present? empty?).");
+				error_log("Error with cache (index is present? empty?).\n", 3, DEBUG);
 				exit;
 		} elseif(empty($result)) {
-			error_log("Index is empty.");
+			error_log("Index is empty.\n", 3, DEBUG);
 		} else {
 // TODO: if is shortlink was deleted?
 			if(!empty($result) && $result !== FALSE) {
@@ -54,7 +54,6 @@ class cron {
 						array($row->shorturl));
 
 					if($return1 && $return2) {
-						return TRUE;
 					} else {
 
 						error_log("We have an error in cron process.");

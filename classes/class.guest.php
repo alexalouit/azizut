@@ -168,13 +168,13 @@ class guest {
 			$this->cache->key = $this->shorturl;
 			$result = new stdClass;
 			if(!$result->url = $this->cache->get()) {
-				error_log("/" . $this->shorturl . " not found in cache. Search in DB.");
+				error_log("/" . $this->shorturl . " not found in cache. Search in DB.\n", 3, DEBUG);
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 					array($this->shorturl));
 				$cacheIt = TRUE;
 			} else {
-				error_log("/" . $this->shorturl . " found in cache.");
+				error_log("/" . $this->shorturl . " found in cache.\n", 3, DEBUG);
 			}
 		} else {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);

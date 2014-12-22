@@ -63,9 +63,10 @@ class cache {
 	public function get() {
 		if($this->type == "log") {
 			$return = array();
+			error_log("Search index..\n", 3, DEBUG);
 			$this->index = $this->memcached->get($this->salt . "index");
 			$i = 1;
-			error_log("Search index..");
+			error_log(count($this->index) . " in index.\n", 3, DEBUG);
 			foreach($this->index as $key => &$value) {
 				if($i >= $this->qpp) {
 					break;
@@ -78,7 +79,7 @@ class cache {
 				$this->memcached->delete($this->salt . $value);
 				$i++;
 			}
-			error_log("Update index..");
+			error_log("Update index..\n", 3, DEBUG);
 			if(empty($this->index)) {
 				$this->index = array();
 			}
@@ -103,17 +104,17 @@ class cache {
 				error_log("Error cache when insert index.");
 				return FALSE;
 			} else {
-				error_log("Insert index for as " . $this->key);
+				error_log("Insert index for as " . $this->key . "\n", 3, DEBUG);
 				if(!$this->memcached->set($this->salt . $this->key, $this->data, $this->ttl)) {
 					error_log("Error cache when insert log.");
 					return FALSE;
 				} else {
-					error_log("Insert log for " . $this->key);
+					error_log("Insert log for " . $this->key . "\n", 3, DEBUG);
 					return TRUE;
 				}
 			}
 		} elseif($this->type == "redirect") {
-			error_log("Insert redirect " . $this->data . " from /" . $this->key);
+			error_log("Insert redirect " . $this->data . " from /" . $this->key . "\n", 3, DEBUG);
 			return $this->memcached->set($this->salt . $this->key, $this->data, $this->ttl);
 		}
 	}
@@ -123,7 +124,7 @@ class cache {
 	 * @return: (bool)
 	 */
 	public function delete() {
-		error_log("Delete redirect /" . $this->key);
+		error_log("Delete redirect /" . $this->key . "\n", 3, DEBUG);
 		return $this->memcached->delete($this->salt . $this->key);
 	}
 
