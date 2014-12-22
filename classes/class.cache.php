@@ -64,18 +64,24 @@ class cache {
 		if($this->type == "log") {
 			$return = array();
 			$this->index = $this->memcached->get($this->salt . "index");
-			$i = 0;
+			$i = 1;
 			error_log("Search index..");
-			foreach($this->index as &$key) {
+			foreach($this->index as $key => &$value) {
 				if($i >= $this->qpp) {
 					break;
 				}
-				unset($key);
-				$return[] = $this->memcached->get($this->salt . $key);
-				$this->memcached->delete($this->salt . $key);
+				unset($this->index[$key]);
+				$result = $this->memcached->get($this->salt . $value);
+				if(!empty($result) && $result !== FALSE) {
+					$return[$i] = $result;
+				}
+				$this->memcached->delete($this->salt . $value);
 				$i++;
 			}
-			error_log("Update index.. (" . $i . "/" . $i+count($this->index) . ")");
+			error_log("Update index..");
+			if(empty($this->index)) {
+				$this->index = array();
+			}
 			$this->memcached->set($this->salt . "index", $this->index, $this->ttl);
 			return $return;
 			

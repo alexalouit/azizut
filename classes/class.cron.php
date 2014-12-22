@@ -10,6 +10,7 @@
 function __autoload($classname) {
 	$filename = "class." . $classname . ".php";
 	include_once($filename);
+}
 
 class cron {
 	private $db = NULL;
@@ -30,24 +31,35 @@ class cron {
 			exit;
 		}
 
-		$this->type = "log";
-		if(!$result = $this->cache->get()) {
-				error_log("Error with cache.");
+		$this->cache->type = "log";
+		$result = $this->cache->get();
+		if(!isset($result) OR $result === FALSE) {
+				error_log("Error with cache (index is present? empty?).");
 				exit;
+		} elseif(empty($result)) {
+			error_log("Index is empty.");
 		} else {
 // TODO: if is shortlink was deleted?
-			if(!empty($result)) {
+			if(!empty($result) && $result !== FALSE) {
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-				if(!$isConnected) {
-					error_log("Error with db.");
-					exit;
-				}
+// TODO: fix->
+//				if(!$this->db->$isConnected) {
+//					error_log("Error with db.");
+//					exit;
+//				}
 				foreach($result as $row) {
-					$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processTime`) VALUES (?, ?, ?, ?, ?, ?) ;", 
+					$return1 = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processTime`) VALUES (?, ?, ?, ?, ?, ?) ;", 
 						array($row->shorturl, $row->ip, $row->useragent, $row->referer, $row->timestamp, $row->processTime));
-// TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-					$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
+					$return2 = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
 						array($row->shorturl));
+
+					if($return1 && $return2) {
+						return TRUE;
+					} else {
+
+						error_log("We have an error in cron process.");
+						return FALSE;
+					}
 				}
 			}
 		}

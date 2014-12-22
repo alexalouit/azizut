@@ -136,7 +136,13 @@ class guest {
 		$this->processTime = ($this->processTime) - (microtime(1));
 		if(CACHE && ASYNC) {
 			$this->cache->type = "log";
-			$this->cache->data = json_encode($this);
+			$this->cache->data = new stdClass;
+			$this->cache->data->shorturl = $this->shorturl;
+			$this->cache->data->ip = $this->ip;
+			$this->cache->data->useragent = $this->useragent;
+			$this->cache->data->referer = $this->referer;
+			$this->cache->data->timestamp = $this->timestamp;
+			$this->cache->data->processTime = $this->processTime;
 			if(!$this->cache->insert()) {
 				error_log("Error with cache, insert directly in DB.");
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
