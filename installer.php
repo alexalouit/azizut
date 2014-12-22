@@ -172,6 +172,7 @@ $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-f\n";
 $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-d\n";
 $htaccess .= "	RewriteRule ^.*$ /index.php [L]\n";
 $htaccess .= "</IfModule>\n";
+$htaccess .= "ErrorDocument 404 /error/404.html\n";
 $htaccess .= "############### Azizute end\n";
 if(!$buffer = fopen('.htaccess', "c")) {
 ?>

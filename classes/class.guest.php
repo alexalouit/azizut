@@ -29,13 +29,13 @@ class guest {
 	private $cache = NULL;
 	private $processTime = 0;
 	private $qrcode = FALSE;
-	private $html_404 = "/error/404.html";
+	private $is_404 = FALSE;
 
 	/*
 	 * Constructor, dispatcher (build the way)
 	 */
 	public function __construct() {
-		$this->processTime = microtime(1);
+		$this->processTime = microtime(TRUE);
 		require_once './config/config.php';
 
 		$this->timestamp = date("o-m-d H:i:s");
@@ -51,7 +51,8 @@ class guest {
 
 		$this->shorturl = str_replace("/", "", $this->shorturl);
 		if(!preg_match("(\A[0-9a-zA-Z]{5}\z)", $this->shorturl)) {
-			$this->html_404(FALSE);
+			$this->is_404 = TRUE;
+			exit;
 		}
 
 		if(CACHE) {
@@ -59,7 +60,8 @@ class guest {
 		}
 
 		if(!$this->get()) {
-			$this->html_404();
+			$this->is_404 = TRUE;
+			exit;
 		} else {
 			if(isset($_SERVER['HTTP_DNT']) && $_SERVER['HTTP_DNT'] == 1) {
 			} else { 
@@ -85,10 +87,6 @@ class guest {
 				$this->qr();
 			}
 
-			if(!$this->log()) {
-//				error_log("We have an error in process, guest was not save.");
-			}
-
 			$this->return = $this->url;
 			exit;
 		}
@@ -99,19 +97,16 @@ class guest {
 	 * @return: http header for guests
 	 */
 	public function __destruct() {
+		if($this->is_404) {
+//			error_log("404.");
+			$this->return = "/error/404.html";
+		} else {
+				$this->log();
+		}
+
 		header("HTTP/1.1 301 Moved Permanently");
 		header("Location: {$this->return}");
 
-		exit;
-	}
-
-	/*
-	 * Deserve 404 to guest, insert in cache for flooding prevent, and log it.
-	 * params: (bool) log
-	 */
-	private function html_404($log = TRUE) {
-		$this->return = $this->html_404;
-// TODO: insert 404 in cache AND log it (if bool) (log after for accurate process time)
 		exit;
 	}
 
@@ -131,9 +126,8 @@ class guest {
 	 * @return (bool)
 	 */
 	private function log() {
-// TODO: fix processtime
 // TODO: return correct (bool) value
-		$this->processTime = ($this->processTime) - (microtime(1));
+		$this->processTime = (microtime(TRUE) - $this->processTime);
 		if(CACHE && ASYNC) {
 			$this->cache->type = "log";
 			$this->cache->data = new stdClass;

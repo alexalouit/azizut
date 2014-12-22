@@ -6,4 +6,5 @@
 	RewriteCond %{REQUEST_FILENAME} !-d
 	RewriteRule ^.*$ /index.php [L]
 </IfModule>
+ErrorDocument 404 /error/404.html
 ############### Azizute end

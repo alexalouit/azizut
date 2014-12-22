@@ -9,27 +9,21 @@ Respect of "Do Not Track"
 
 QRCode support (add .qr)
 
+Support cache (memcached) and async operations (/cron.php page).
+
 Authentification failure is logged for fail2ban support
 
 
+# Planned:
 
-# For the moment:
+- support for nginx
 
-- no gui
+- robots.txt support
 
-- no cache (memcached & apc planned)
+- 404 cache for prevent DDOS flooding
 
-- username and password must be set manually in db (strongly recommended to not store it "as plaintext", base64 encode with salt minimum..)
+- 404 logged for fail2ban support
 
-- no cron (when cache is functional, insertion of visitor logs (stats) must be delayed and processed by packet.)
-
-- must be at the root of the web server
-
-- support only apache
-
-- robots.txt not support
-
-- unified class guest/api (need to separate them for fastest process)
 
 
 # Installation:
@@ -42,6 +36,11 @@ If you want to create redirect domain, create (manually) an entry in the databas
 ```
 INSERT INTO `data` (`shorturl`, `url`, `clicks`, `ip`, `description`, `owner`, `timestamp`) VALUES ('','http://www.zut.io/',0,'127.0.0.1','domain redirect','god','1999-12-31 23:59:59');
 ```
+
+Azizut must be at the root of domain/ip.
+
+Authorization access must be inserted manually (or with external API) in DB.
+
 
 # Short API usage:
 
