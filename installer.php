@@ -116,6 +116,7 @@ CREATE TABLE `stats` (
   `useragent` varchar(255) NOT NULL DEFAULT '', 
   `referer` varchar(255) NOT NULL DEFAULT '', 
   `timestamp` datetime NOT NULL, 
+  `processtime` varchar(99) DEFAULT NULL,
   KEY `shorturl` (`shorturl`), 
   KEY `ip` (`ip`) 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
@@ -141,6 +142,7 @@ CREATE TABLE `stats_deleted` (
   `useragent` varchar(255) NOT NULL DEFAULT '', 
   `referer` varchar(255) NOT NULL DEFAULT '', 
   `timestamp` datetime NOT NULL, 
+  `processtime` varchar(99) DEFAULT NULL,
   KEY `shorturl` (`shorturl`), 
   KEY `ip` (`ip`) 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
@@ -170,12 +172,15 @@ $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-f\n";
 $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-d\n";
 $htaccess .= "	RewriteRule ^.*$ /index.php [L]\n";
 $htaccess .= "</IfModule>\n";
+$htaccess .= "ErrorDocument 404 /error/404.html\n";
 $htaccess .= "############### Azizute end\n";
 if(!$buffer = fopen('.htaccess', "c")) {
 ?>
 <br />
 <b>/!\ Impossible to create .htaccess file.</b>
 <?php
+// only if apache
+// check mod_rewrite present
 }
 
 if(!file_put_contents('.htaccess', $htaccess)) {
