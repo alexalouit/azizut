@@ -47,6 +47,7 @@ CREATE TABLE `stats` (
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
   `timestamp` datetime NOT NULL,
+  `processtime` varchar(99) DEFAULT NULL,
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -60,6 +61,7 @@ CREATE TABLE `stats_deleted` (
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
   `timestamp` datetime NOT NULL,
+  `processtime` varchar(99) DEFAULT NULL,
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
