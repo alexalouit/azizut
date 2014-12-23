@@ -13,7 +13,6 @@ function __autoload($classname) {
 }
 
 class guest {
-	private $return = "";
 	private $host = NULL;
 	private $ip = "unknown";
 	private $clicks = 0;
@@ -21,7 +20,7 @@ class guest {
 	private $timestamp = NULL;
 	private $referer = "unknown";
 	private $useragent = "unknown";
-	private $url = NULL;
+	private $url = "";
 	private $shorturl = NULL;
 	private $start = 0;
 	private $limit = 500;
@@ -29,7 +28,6 @@ class guest {
 	private $cache = NULL;
 	private $processTime = 0;
 	private $qrcode = FALSE;
-	private $is_404 = FALSE;
 
 	/*
 	 * Constructor, dispatcher (build the way)
@@ -51,7 +49,7 @@ class guest {
 
 		$this->shorturl = str_replace("/", "", $this->shorturl);
 		if(!preg_match("(\A[0-9a-zA-Z]{5}\z)", $this->shorturl) && !empty($this->shorturl)) {
-			$this->is_404 = TRUE;
+			@error_log("/" . $this->shorturl . " invalid pattern.\n", 3, DEBUG);
 			exit;
 		}
 
@@ -60,7 +58,6 @@ class guest {
 		}
 
 		if(!$this->get()) {
-			$this->is_404 = TRUE;
 			exit;
 		} else {
 			if(isset($_SERVER['HTTP_DNT']) && $_SERVER['HTTP_DNT'] == 1) {
@@ -87,7 +84,6 @@ class guest {
 				$this->qr();
 			}
 
-			$this->return = $this->url;
 			exit;
 		}
 	}
@@ -97,16 +93,30 @@ class guest {
 	 * @return: http header for guests
 	 */
 	public function __destruct() {
-		if($this->is_404) {
-//			error_log("404.");
-			$this->return = "/error/404.html";
+		if(empty($this->url)) {
+			header("HTTP/1.1 404 Not Found");
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<title>ERROR 404 - Not Found!</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="robots" content="noindex" />
+	</head>
+	<body>
+		<h1>ERROR 404 - Not Found!</h1>
+		<h2>The following error occurred:</h2>
+		<p>The requested URL was not found on this server.</p>
+	</body>
+</html>
+<?php
+//			$this->log();
+			exit;
 		} else {
-				$this->log();
+			$this->log();
+			header("HTTP/1.1 301 Moved Permanently");
+			header("Location: {$this->url}");
 		}
-
-		header("HTTP/1.1 301 Moved Permanently");
-		header("Location: {$this->return}");
-
 		exit;
 	}
 
@@ -116,7 +126,7 @@ class guest {
 	 * @apiReturn: (string) qrcode link
 	 */
 	private function qr() {
-		$this->return = "http://chart.apis.google.com/chart?chs=150x150&cht=qr&chld=M&chl=" . $this->host . $this->shorturl;
+		$this->url = "http://chart.apis.google.com/chart?chs=150x150&cht=qr&chld=M&chl=" . $this->host . $this->shorturl;
 
 		exit;
 	}
@@ -167,38 +177,49 @@ class guest {
 			$this->cache->type = "redirect";
 			$this->cache->key = $this->shorturl;
 			$result = new stdClass;
-			if(!$result->url = $this->cache->get()) {
-				@error_log("/" . $this->shorturl . " not found in cache. Search in DB.\n", 3, DEBUG);
+			$this->url = $this->cache->get();
+			if(is_bool($this->url)) {
+				@error_log("/" . $this->shorturl . " MISS-CACHE\n", 3, DEBUG);
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 					array($this->shorturl));
-				$cacheIt = TRUE;
+
+				$this->url = $result->url;
+				$this->cache->data = $this->url;
+				@error_log("/" . $this->shorturl . " to " . $this->url . " INSERT-CACHE\n", 3, DEBUG);
+				$this->cache->insert();
+				if(!empty($this->url)) {
+					@error_log("/" . $this->shorturl . " to " . $this->url . " HIT-DB\n", 3, DEBUG);
+
+					return TRUE;
+				} else {
+					@error_log("/" . $this->shorturl . " MISS-DB\n", 3, DEBUG);
+
+
+					return FALSE;
+				}
 			} else {
-				@error_log("/" . $this->shorturl . " found in cache.\n", 3, DEBUG);
+				@error_log("/" . $this->shorturl . " to " . $this->url . " HIT-CACHE\n", 3, DEBUG);
+
+				return TRUE;
 			}
+
 		} else {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 			$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 				array($this->shorturl));
-		}
 
-		if(!$result OR empty($result->url)) {
+			if(empty($result->url)) {
+				@error_log("/" . $this->shorturl . " MISS-DB\n", 3, DEBUG);
 
-			return FALSE;
-		} else {
-			$this->url = $result->url;
+				return FALSE;
+			} else {
+				@error_log("/" . $this->shorturl . " to " . $result->url . " HIT-DB\n", 3, DEBUG);
+				$this->url = $result->url;
 
-			if(isset($cacheIt) && $cacheIt) {
-				$this->cache->key = $this->shorturl;
-				$this->cache->data = $this->url;
-				$this->cache->type = "redirect";
-				$this->cache->insert();
-				$this->cache->type = "log";
+				return TRUE;
 			}
-
-			return TRUE;
 		}
-
 	}
 
 

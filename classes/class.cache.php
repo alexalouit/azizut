@@ -88,7 +88,7 @@ class cache {
 			return $return;
 			
 		} elseif($this->type == "redirect") {
-			return  $this->memcached->get($this->salt . $this->key);
+			return $this->memcached->get($this->salt . $this->key);
 		}
 	}
 
@@ -115,7 +115,6 @@ class cache {
 				}
 			}
 		} elseif($this->type == "redirect") {
-			@error_log("Insert redirect " . $this->data . " from /" . $this->key . "\n", 3, DEBUG);
 			return $this->memcached->set($this->salt . $this->key, $this->data, $this->ttl);
 		}
 	}

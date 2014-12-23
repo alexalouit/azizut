@@ -10,7 +10,7 @@ CREATE TABLE `auth` (
 DROP TABLE IF EXISTS `data`;
 
 CREATE TABLE `data` (
-  `shorturl` varchar(8) NOT NULL DEFAULT '',
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `url` varchar(255) NOT NULL DEFAULT '',
   `clicks` int(99) NOT NULL DEFAULT '0',
   `ip` varchar(64) NOT NULL DEFAULT '',
@@ -27,7 +27,7 @@ VALUES ('mqfLH','http://www.yahoo.fr/',0,'127.0.0.1','This is a test.','god','19
 DROP TABLE IF EXISTS `data_deleted`;
 
 CREATE TABLE `data_deleted` (
-  `shorturl` varchar(8) NOT NULL DEFAULT '',
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `url` varchar(255) NOT NULL DEFAULT '',
   `clicks` int(99) NOT NULL DEFAULT '0',
   `ip` varchar(64) NOT NULL DEFAULT '',
@@ -42,7 +42,7 @@ CREATE TABLE `data_deleted` (
 DROP TABLE IF EXISTS `stats`;
 
 CREATE TABLE `stats` (
-  `shorturl` varchar(8) NOT NULL DEFAULT '',
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `ip` varchar(64) NOT NULL DEFAULT '',
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
@@ -56,7 +56,7 @@ CREATE TABLE `stats` (
 DROP TABLE IF EXISTS `stats_deleted`;
 
 CREATE TABLE `stats_deleted` (
-  `shorturl` varchar(8) NOT NULL DEFAULT '',
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `ip` varchar(64) NOT NULL DEFAULT '',
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
