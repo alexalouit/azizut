@@ -50,7 +50,7 @@ class guest {
 		}
 
 		$this->shorturl = str_replace("/", "", $this->shorturl);
-		if(!preg_match("(\A[0-9a-zA-Z]{5}\z)", $this->shorturl)) {
+		if(!preg_match("(\A[0-9a-zA-Z]{5}\z)", $this->shorturl) && !empty($this->shorturl)) {
 			$this->is_404 = TRUE;
 			exit;
 		}
