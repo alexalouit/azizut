@@ -20,10 +20,6 @@ Authentification failure is logged for fail2ban support
 
 - robots.txt support
 
-- 404 cache for prevent DDOS flooding
-
-- 404 logged for fail2ban support
-
 
 
 # Installation:

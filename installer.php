@@ -55,7 +55,7 @@ Problem!
 <?php
 $query = "DROP TABLE IF EXISTS `data`; 
 CREATE TABLE `data` ( 
-  `shorturl` varchar(8) NOT NULL DEFAULT '', 
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '', 
   `url` varchar(255) NOT NULL DEFAULT '', 
   `clicks` int(99) NOT NULL DEFAULT '0', 
   `ip` varchar(64) NOT NULL DEFAULT '', 
@@ -84,7 +84,7 @@ Problem!
 <?php
 $query = "DROP TABLE IF EXISTS `data_deleted`; 
 CREATE TABLE `data_deleted` ( 
-  `shorturl` varchar(8) NOT NULL DEFAULT '', 
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '', 
   `url` varchar(255) NOT NULL DEFAULT '', 
   `clicks` int(99) NOT NULL DEFAULT '0', 
   `ip` varchar(64) NOT NULL DEFAULT '', 
@@ -111,7 +111,7 @@ Problem!
 <?php
 $query = "DROP TABLE IF EXISTS `stats`; 
 CREATE TABLE `stats` ( 
-  `shorturl` varchar(8) NOT NULL DEFAULT '', 
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '', 
   `ip` varchar(64) NOT NULL DEFAULT '', 
   `useragent` varchar(255) NOT NULL DEFAULT '', 
   `referer` varchar(255) NOT NULL DEFAULT '', 
@@ -137,7 +137,7 @@ Problem!
 <?php
 $query = "DROP TABLE IF EXISTS `stats_deleted`; 
 CREATE TABLE `stats_deleted` (
-  `shorturl` varchar(8) NOT NULL DEFAULT '', 
+  `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '', 
   `ip` varchar(64) NOT NULL DEFAULT '', 
   `useragent` varchar(255) NOT NULL DEFAULT '', 
   `referer` varchar(255) NOT NULL DEFAULT '', 
@@ -172,7 +172,6 @@ $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-f\n";
 $htaccess .= "	RewriteCond %{REQUEST_FILENAME} !-d\n";
 $htaccess .= "	RewriteRule ^.*$ /index.php [L]\n";
 $htaccess .= "</IfModule>\n";
-$htaccess .= "ErrorDocument 404 /error/404.html\n";
 $htaccess .= "############### Azizute end\n";
 if(!$buffer = fopen('.htaccess', "c")) {
 ?>
