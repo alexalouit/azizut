@@ -49,7 +49,6 @@ class guest {
 
 		$this->shorturl = str_replace("/", "", $this->shorturl);
 		if(!preg_match("(\A[0-9a-zA-Z]{5}\z)", $this->shorturl) && !empty($this->shorturl)) {
-			@error_log("/" . $this->shorturl . " invalid pattern.\n", 3, DEBUG);
 			exit;
 		}
 
@@ -94,6 +93,7 @@ class guest {
 	 */
 	public function __destruct() {
 		if(empty($this->url)) {
+			error_log("File does not exist: /" . $this->shorturl);
 			header("HTTP/1.1 404 Not Found");
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
