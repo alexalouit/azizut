@@ -48,8 +48,8 @@ class cron {
 //					exit;
 //				}
 				foreach($result as $row) {
-					$return1 = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processTime`) VALUES (?, ?, ?, ?, ?, ?) ;", 
-						array($row->shorturl, $row->ip, $row->useragent, $row->referer, $row->timestamp, $row->processTime));
+					$return1 = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processTime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;", 
+						array($row->shorturl, $row->ip, $row->useragent, $row->referer, $row->timestamp, $row->processTime, $row->cacheHit));
 					$return2 = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
 						array($row->shorturl));
 

@@ -27,6 +27,7 @@ class guest {
 	private $db = NULL;
 	private $cache = NULL;
 	private $processTime = 0;
+	private $cacheHit = 1;
 	private $qrcode = FALSE;
 
 	/*
@@ -36,7 +37,7 @@ class guest {
 		$this->processTime = microtime(TRUE);
 		require_once './config/config.php';
 
-		$this->timestamp = date("o-m-d H:i:s");
+		$this->timestamp = time();
 		$this->ip = $_SERVER['REMOTE_ADDR'];
 
 		$this->shorturl = $_SERVER['REQUEST_URI'];
@@ -147,19 +148,20 @@ class guest {
 			$this->cache->data->referer = $this->referer;
 			$this->cache->data->timestamp = $this->timestamp;
 			$this->cache->data->processTime = $this->processTime;
+			$this->cache->data->cacheHit = $this->cacheHit;
 			if(!$this->cache->insert()) {
 				error_log("Error with cache, insert directly in DB.");
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-				$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`) VALUES (?, ?, ?, ?, ?, ?) ;", 
-					array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime));
+				$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;", 
+					array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime, $this->cacheHit));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
 				$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
 					array($this->shorturl));
 			}
 		} else {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-			$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`) VALUES (?, ?, ?, ?, ?, ?) ;", 
-				array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime));
+			$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;", 
+				array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime, $this->cacheHit));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
 			$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
 				array($this->shorturl));
@@ -179,7 +181,7 @@ class guest {
 			$result = new stdClass;
 			$this->url = $this->cache->get();
 			if(is_bool($this->url)) {
-				@error_log("/" . $this->shorturl . " MISS-CACHE\n", 3, DEBUG);
+				$this->cacheHit = 0;
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 					array($this->shorturl));
@@ -189,7 +191,7 @@ class guest {
 				@error_log("/" . $this->shorturl . " to " . $this->url . " INSERT-CACHE\n", 3, DEBUG);
 				$this->cache->insert();
 				if(!empty($this->url)) {
-					@error_log("/" . $this->shorturl . " to " . $this->url . " HIT-DB\n", 3, DEBUG);
+//					@error_log("/" . $this->shorturl . " to " . $this->url . " HIT-DB\n", 3, DEBUG);
 
 					return TRUE;
 				} else {
@@ -199,7 +201,7 @@ class guest {
 					return FALSE;
 				}
 			} else {
-				@error_log("/" . $this->shorturl . " to " . $this->url . " HIT-CACHE\n", 3, DEBUG);
+				$this->cacheHit = 1;
 
 				return TRUE;
 			}
@@ -214,7 +216,7 @@ class guest {
 
 				return FALSE;
 			} else {
-				@error_log("/" . $this->shorturl . " to " . $result->url . " HIT-DB\n", 3, DEBUG);
+//				@error_log("/" . $this->shorturl . " to " . $result->url . " HIT-DB\n", 3, DEBUG);
 				$this->url = $result->url;
 
 				return TRUE;

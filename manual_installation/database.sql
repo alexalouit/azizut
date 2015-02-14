@@ -16,13 +16,13 @@ CREATE TABLE `data` (
   `ip` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(255) NOT NULL DEFAULT '',
   `owner` varchar(99) NOT NULL DEFAULT '',
-  `timestamp` datetime NOT NULL,
+  `timestamp` timestamp NOT NULL,
   UNIQUE KEY `shorturl` (`shorturl`),
   KEY `owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO `data` (`shorturl`, `url`, `clicks`, `ip`, `description`, `owner`, `timestamp`) 
-VALUES ('mqfLH','http://www.yahoo.fr/',0,'127.0.0.1','This is a test.','god','1999-12-31 23:59:59');
+VALUES ('mqfLH','http://www.yahoo.fr/',0,'127.0.0.1','This is a test.','god','0');
 
 DROP TABLE IF EXISTS `data_deleted`;
 
@@ -33,7 +33,7 @@ CREATE TABLE `data_deleted` (
   `ip` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(255) NOT NULL DEFAULT '',
   `owner` varchar(99) NOT NULL DEFAULT '',
-  `timestamp` datetime NOT NULL,
+  `timestamp` timestamp NOT NULL,
   UNIQUE KEY `shorturl` (`shorturl`),
   KEY `owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -46,8 +46,9 @@ CREATE TABLE `stats` (
   `ip` varchar(64) NOT NULL DEFAULT '',
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
-  `timestamp` datetime NOT NULL,
+  `timestamp` timestamp NOT NULL,
   `processtime` varchar(99) DEFAULT NULL,
+  `cacheHit` bool DEFAULT '0',
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -60,8 +61,9 @@ CREATE TABLE `stats_deleted` (
   `ip` varchar(64) NOT NULL DEFAULT '',
   `useragent` varchar(255) NOT NULL DEFAULT '',
   `referer` varchar(255) NOT NULL DEFAULT '',
-  `timestamp` datetime NOT NULL,
+  `timestamp` timestamp NOT NULL,
   `processtime` varchar(99) DEFAULT NULL,
+  `cacheHit` bool DEFAULT '0',
   KEY `shorturl` (`shorturl`),
   KEY `ip` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
