@@ -173,8 +173,8 @@ class api {
 			$periodEnd = $this->request->params->period->end;
 		} else {
 			// if period isn't set (or is invalid), use current year as reference
-			$periodStart = strtotime(date("Y") . "-01-01 00:00:00");
-			$periodEnd = strtotime(date("Y")+1 . "-01-01 00:00:00");
+			$periodStart = date("Y") . "-01-01 00:00:00";
+			$periodEnd = date("Y")+1 . "-01-01 00:00:00";
 		}
 
 		if(empty($this->shorturl) && empty($this->url)) {
