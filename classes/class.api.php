@@ -41,7 +41,7 @@ class api {
 	public function __construct() {
 		require_once './config/config.php';
 
-		$this->timestamp = date("o-m-d H:i:s");
+		$this->timestamp = date("Y-m-d H:i:s");
 		$this->ip = $_SERVER['REMOTE_ADDR'];
 		$this->domain =  $_SERVER['HTTP_HOST'] . "/";
 		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") {
@@ -168,9 +168,13 @@ class api {
 
 		if(isset($this->request->params->period) && 
 			preg_match('"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"', $this->request->params->period)) {
+			// valid period format
+			$periodStart = $this->request->params->period->start;
+			$periodEnd = $this->request->params->period->end;
 		} else {
-			$periodStart = date("Y") . "-01-01 00:00:00";
-			$periodEnd = date("Y")+1 . "-01-01 00:00:00";
+			// if period isn't set (or is invalid), use current year as reference
+			$periodStart = strtotime(date("Y") . "-01-01 00:00:00");
+			$periodEnd = strtotime(date("Y")+1 . "-01-01 00:00:00");
 		}
 
 		if(empty($this->shorturl) && empty($this->url)) {

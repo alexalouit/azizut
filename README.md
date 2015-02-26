@@ -1,34 +1,36 @@
 Azizut
 ======
 
-Azizut is a private shortener designed to be as light and efficient as possible
+Azizut is a private shortener designed to be as light and efficient as possible.
 
 
 
-Respect of "Do Not Track"
+Respect of "Do Not Track".
 
-QRCode support (add .qr)
+QRCode support (add .qr).
 
-Support cache (memcached) and async operations (/cron.php page).
+Support cache (memcached) and async operations (/cron.php page each 5 minutes recommended).
 
-Authentification failure is logged for fail2ban support
+Authentification failure is logged for fail2ban support.
 
 
 # Planned:
 
-- support for nginx
+- support for nginx.
 
-- robots.txt support
+- robots.txt support.
 
 
 
 # Installation:
 
-Configuration file in /config/ folder (do it first!)
+Configuration file in /config/ folder (do it first!).
 
-Automatic: go to ./installer.php page
+htaccess and sql database is in root folder.
 
-If you want to create redirect domain, create (manually) an entry in the database (for the moment, the visits will be recorded)
+For better performance, disable logging (eg. for apache, add "CustomLog /dev/null common" to vhost file)
+
+If you want to create redirect domain, create (manually) an entry in the database (for the moment, the visits will be recorded).
 ```
 INSERT INTO `data` (`shorturl`, `url`, `clicks`, `ip`, `description`, `owner`, `timestamp`) VALUES ('','http://www.zut.io/',0,'127.0.0.1','domain redirect','god','1999-12-31 23:59:59');
 ```
@@ -37,12 +39,16 @@ Azizut must be at the root of domain/ip.
 
 Authorization access must be inserted manually (or with external API) in DB.
 
+For async mode, use a cron (ex: each minutes) on /cron.php.
+
 
 # Short API usage:
 
-Dialog type is json (call & response),  php client class -> (https://github.com/alexalouit/azizut-client-class)
+Dialog type is json (call & response),  php client class -> (https://github.com/alexalouit/azizut-client-class).
 
 Response always contain Standard HTTP Status code (as statusCode field), data return always in data field.
+
+All date/time must be/is as timestamp format.
 
 Call always must contain auth (access field) for the moment, extras params must be in params field.
 
@@ -113,7 +119,7 @@ Response:
 
 access: username password
 
-(you can only deal with your own data)
+(you can only deal with your own data).
 
 
 ## - create link
@@ -129,7 +135,7 @@ action: update
 
 params: shorturl/url newShorturl/newUrl
 
-(newShorturl could be empty string (like ""),  for new "random" shorturl)
+(newShorturl could be empty string (like ""),  for new "random" shorturl).
 
 
 
@@ -139,7 +145,7 @@ action: delete
 
 params: shorturl/url
 
-(shorturl is faster than url)
+(shorturl is faster than url).
 
 
 
@@ -149,7 +155,7 @@ action: get
 
 params: shorturl/url [stats](bool)
 
-(shorturl is faster than url)
+(shorturl is faster than url).
 
 
 ## - get links
@@ -159,4 +165,4 @@ action: get
 params: [start](int), [limit](int)
 
 
-Shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl"
+Shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl".
