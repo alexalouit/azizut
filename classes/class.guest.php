@@ -37,7 +37,7 @@ class guest {
 		$this->processTime = microtime(TRUE);
 		require_once './config/config.php';
 
-		$this->timestamp = time();
+		$this->timestamp = date("Y-m-d H:i:s");
 		$this->ip = $_SERVER['REMOTE_ADDR'];
 
 		$this->shorturl = $_SERVER['REQUEST_URI'];
@@ -181,6 +181,7 @@ class guest {
 			$result = new stdClass;
 			$this->url = $this->cache->get();
 			if(is_bool($this->url)) {
+				// error with cache
 				$this->cacheHit = 0;
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
@@ -207,6 +208,7 @@ class guest {
 			}
 
 		} else {
+			$this->cacheHit = 0;
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
 			$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
 				array($this->shorturl));
