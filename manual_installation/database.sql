@@ -6,7 +6,7 @@ CREATE TABLE `auth` (
 
 CREATE TABLE `data` (
   `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
-  `url` varchar(255) NOT NULL DEFAULT '',
+  `url` varchar(1024) NOT NULL DEFAULT '',
   `clicks` int(99) NOT NULL DEFAULT '0',
   `ip` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(255) NOT NULL DEFAULT '',
@@ -21,7 +21,7 @@ VALUES ('mqfLH','http://www.yahoo.fr/',0,'127.0.0.1','This is a test.','god','19
 
 CREATE TABLE `data_deleted` (
   `shorturl` varchar(8) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
-  `url` varchar(255) NOT NULL DEFAULT '',
+  `url` varchar(1024) NOT NULL DEFAULT '',
   `clicks` int(99) NOT NULL DEFAULT '0',
   `ip` varchar(64) NOT NULL DEFAULT '',
   `description` varchar(255) NOT NULL DEFAULT '',

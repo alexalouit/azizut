@@ -30,20 +30,22 @@ class cache {
 	 * Constructor
 	 */
 	public function __construct() {
-/*
-		if(!empty(MEMCACHED_SERVER)) {
+		if(defined("MEMCACHED_SERVER")) {
 			$this->server = MEMCACHED_SERVER;
 		}
-		if(!empty(MEMCACHED_PORT)) {
+
+		if(defined("MEMCACHED_PORT") && is_int(MEMCACHED_PORT)) {
 			$this->port = MEMCACHED_PORT;
 		}
-		if(!empty(QPP)) {
+
+		if(defined("QPP") && is_int(QPP)) {
 			$this->qpp = QPP;
 		}
-		if(!empty(MEMCACHED_TTL)) {
+
+		if(defined("MEMCACHED_TTL") && is_int(MEMCACHED_TTL)) {
 			$this->ttl = MEMCACHED_TTL;
 		}
-*/
+
 		$this->memcached = new Memcached();
 		if(!$this->memcached->addServer($this->server, $this->port)) {
 			return FALSE;

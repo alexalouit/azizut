@@ -11,22 +11,16 @@ QRCode support (add .qr).
 
 Support cache (memcached) and async operations (/cron.php page each 5 minutes recommended).
 
+Support Apache/Nginx
+
 Authentification failure is logged for fail2ban support.
-
-
-# Planned:
-
-- support for nginx.
-
-- robots.txt support.
-
 
 
 # Installation:
 
 Configuration file in /config/ folder (do it first!).
 
-htaccess and sql database is in root folder.
+htaccess and sql database is in root folder, for nginx, use ```location / { try_files $uri $uri/ /index.php; }``` directive.
 
 For better performance, disable logging (eg. for apache, add "CustomLog /dev/null common" to vhost file)
 
