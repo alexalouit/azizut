@@ -13,27 +13,116 @@ function __autoload($classname) {
 }
 
 class api {
+
+	/*
+	 *
+	 */
 	private $request = NULL;
+
+	/*
+	 * default status code
+	 */
 	private $statusCode = 200;
+
+	/*
+	 * default return value
+	 */
 	private $return = "";
+
+	/*
+	 *
+	 */
 	private $host = NULL;
+
+	/*
+	 *
+	 */
 	private $domain = NULL;
+
+	/*
+	 *
+	 */
 	private $headers = NULL;
+
+	/*
+	 *
+	 */
 	private $ip = "unknown";
+
+	/*
+	 * default click counter
+	 */
 	private $clicks = 0;
+
+	/*
+	 *
+	 */
 	private $uniquid = NULL;
+
+	/*
+	 *
+	 */
 	private $timestamp = NULL;
+
+	/*
+	 * default referer
+	 */
 	private $referer = "unknown";
+
+	/*
+	 * default user agent
+	 */
 	private $useragent = "unknown";
+
+	/*
+	 * username api
+	 */
 	private $username = NULL;
+
+	/*
+	 * password api
+	 */
 	private $password = NULL;
+
+	/*
+	 *
+	 */
 	private $url = NULL;
+
+	/*
+	 *
+	 */
 	private $shorturl = NULL;
+
+	/*
+	 * default description
+	 */
 	private $description = "unknown";
+
+	/*
+	 *
+	 */
 	private $start = 0;
+
+	/*
+	 *
+	 */
 	private $limit = 500;
+
+	/*
+	 * shared database ressource
+	 */
 	private $db = NULL;
+
+	/*
+	 *  shared cache ressource
+	 */
 	private $cache = NULL;
+
+	/*
+	 * scraper timeout
+	 */
+	private $timeout = 1;
 
 	/*
 	 * Constructor, dispatcher (build the way)
@@ -546,9 +635,11 @@ class api {
 	 * @return (bool)
 	 */
 	private function giveMeDescription() {
+		$options = stream_context_create(array('http' => array('timeout' => $this->timeout)));
+
 		if(!empty($this->url)) {
 // TODO: check return header, and check status code (site is valid?)
-			$buffer = file_get_contents($this->url);
+			$buffer = file_get_contents($this->url, 0, $options);
 			if(strlen($buffer) > 0){
 				preg_match("/\<title\>(.*)\<\/title\>/", $buffer, $description);
 // TODO: fix this dummy things->
