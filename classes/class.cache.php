@@ -70,22 +70,31 @@ class cache {
 			$this->index = $this->memcached->get($this->salt . "index");
 			$i = 1;
 			@error_log(count($this->index) . " in index.\n", 3, DEBUG);
+
+// todo: prevent empty (foreach warning)
+
 			foreach($this->index as $key => &$value) {
 				if($i >= $this->qpp) {
 					break;
 				}
+
 				unset($this->index[$key]);
 				$result = $this->memcached->get($this->salt . $value);
+
 				if(!empty($result) && $result !== FALSE) {
 					$return[$i] = $result;
 				}
+
 				$this->memcached->delete($this->salt . $value);
 				$i++;
 			}
+
 			@error_log("Update index..\n", 3, DEBUG);
+
 			if(empty($this->index)) {
 				$this->index = array();
 			}
+
 			$this->memcached->set($this->salt . "index", $this->index, $this->ttl);
 			return $return;
 			
