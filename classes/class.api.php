@@ -13,33 +13,125 @@ function __autoload($classname) {
 }
 
 class api {
+
+	/*
+	 *
+	 */
 	private $request = NULL;
+
+	/*
+	 * default status code
+	 */
 	private $statusCode = 200;
+
+	/*
+	 * default return value
+	 */
 	private $return = "";
+
+	/*
+	 *
+	 */
 	private $host = NULL;
+
+	/*
+	 *
+	 */
 	private $domain = NULL;
+
+	/*
+	 *
+	 */
 	private $headers = NULL;
+
+	/*
+	 *
+	 */
 	private $ip = "unknown";
+
+	/*
+	 * default click counter
+	 */
 	private $clicks = 0;
+
+	/*
+	 *
+	 */
 	private $uniquid = NULL;
+
+	/*
+	 *
+	 */
 	private $timestamp = NULL;
+
+	/*
+	 * default referer
+	 */
 	private $referer = "unknown";
+
+	/*
+	 * default user agent
+	 */
 	private $useragent = "unknown";
+
+	/*
+	 * username api
+	 */
 	private $username = NULL;
+
+	/*
+	 * password api
+	 */
 	private $password = NULL;
+
+	/*
+	 *
+	 */
 	private $url = NULL;
+
+	/*
+	 *
+	 */
 	private $shorturl = NULL;
+
+	/*
+	 * default description
+	 */
 	private $description = "unknown";
+
+	/*
+	 *
+	 */
 	private $start = 0;
+
+	/*
+	 *
+	 */
 	private $limit = 500;
+
+	/*
+	 * shared database ressource
+	 */
 	private $db = NULL;
+
+	/*
+	 *  shared cache ressource
+	 */
 	private $cache = NULL;
+
+	/*
+	 * scraper timeout
+	 */
+	private $timeout = 1;
 
 	/*
 	 * Constructor, dispatcher (build the way)
 	 */
 	public function __construct() {
 		require_once './config/config.php';
+
+		$this->return = new \stdClass;
+		$this->return->data = new \stdClass;
 
 		$this->timestamp = date("Y-m-d H:i:s");
 		$this->ip = $_SERVER['REMOTE_ADDR'];
@@ -124,7 +216,7 @@ class api {
 			$this->url = filter_var($this->request->params->url, FILTER_SANITIZE_URL);
 			$this->giveMeShortUrl();
 			$this->giveMeDescription();
-			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;", 
+			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;",
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
 			$this->return->data->shorturl = $this->shorturl;
 			$this->return->data->link = $this->host . $this->shorturl;
@@ -166,7 +258,7 @@ class api {
 			$this->url = $this->request->params->url;
 		}
 
-		if(isset($this->request->params->period) && 
+		if(isset($this->request->params->period) &&
 			preg_match('"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"', $this->request->params->period)) {
 			// valid period format
 			$periodStart = $this->request->params->period->start;
@@ -187,7 +279,7 @@ class api {
 				$this->limit = $this->request->params->limit;
 			}
 			$limiter = $this->start . ", " . $this->limit;
-			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ? ;", 
+			$result = $this->db->getRows("SELECT * FROM `data` WHERE `owner` = ? ORDER BY `timestamp` DESC LIMIT ? , ? ;",
 			array($this->username, $this->start, $this->limit));
 
 			if($result) {
@@ -199,32 +291,32 @@ class api {
 
 				// statisctics extrapolation for all links
 				if(isset($this->request->params->stats) && $this->request->params->stats) {
-					$per_monthResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, MONTH(`stats`.`timestamp`) AS `month` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$per_monthResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, MONTH(`stats`.`timestamp`) AS `month` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`) ;",
 						array($this->username, $periodStart, $periodEnd));
 					foreach($per_monthResult as $row) {
 						$this->return->data["stats"]->per_month[$row->month] = $row->value;
 					}
 
-					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAYOFWEEK(`stats`.`timestamp`) AS `dayOfWeek` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAYOFWEEK(`stats`.`timestamp`) AS `dayOfWeek` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY DAYOFWEEK(`stats`.`timestamp`) ;",
 						array($this->username, $periodStart, $periodEnd));
 					foreach($per_dayOfWeekResult as $row) {
 						$this->return->data["stats"]->per_dayOfWeek[$row->dayOfWeek] = $row->value;
 					}
 
-					$per_dayResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAY(`stats`.`timestamp`) AS `day` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$per_dayResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, DAY(`stats`.`timestamp`) AS `day` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`) ;",
 						array($this->username, $periodStart, $periodEnd));
 					foreach($per_dayResult as $row) {
 						$this->return->data["stats"]->per_day[$row->day] = $row->value;
 					}
 
-					$per_hourResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, HOUR(`stats`.`timestamp`) AS `hour` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$per_hourResult = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, HOUR(`stats`.`timestamp`) AS `hour` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`stats`.`timestamp`), MONTH(`stats`.`timestamp`), DAY(`stats`.`timestamp`), HOUR(`stats`.`timestamp`) ;",
 						array($this->username, $periodStart, $periodEnd));
 					foreach($per_hourResult as $row) {
@@ -232,13 +324,13 @@ class api {
 					}
 // TODO: (bug) we have result as last entry on sub-sub object pointer ($this->return->data)
 
-					$this->return->data["stats"]->per_referer = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$this->return->data["stats"]->per_referer = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY `stats`.`referer` ;",
 						array($this->username, $periodStart, $periodEnd));
 
-					$this->return->data["stats"]->per_useragent = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats` 
-						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ? 
+					$this->return->data["stats"]->per_useragent = $this->db->getRows("SELECT COUNT(`stats`.`shorturl`) AS `value`, `stats`.`timestamp` FROM `stats`
+						LEFT JOIN `data` ON `stats`.`shorturl` = `data`.`shorturl` WHERE `data`.`owner` = ? AND `stats`.`timestamp` BETWEEN ? AND ?
 						GROUP BY `stats`.`useragent` ;",
 						array($this->username, $periodStart, $periodEnd));
 				}
@@ -252,10 +344,10 @@ class api {
 
 		} elseif(!empty($this->shorturl) OR !empty($this->url)) {
 				if(!empty($this->shorturl)) {
-					$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;", 
+					$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? AND `owner` = ? ;",
 						array($this->shorturl, $this->username));
 				} elseif(!empty($this->url)) {
-					$result = $this->db->getRow("SELECT * FROM `data` WHERE `url` = ? AND `owner` = ? ;", 
+					$result = $this->db->getRow("SELECT * FROM `data` WHERE `url` = ? AND `owner` = ? ;",
 						array($this->url, $this->username));
 				}
 
@@ -267,43 +359,43 @@ class api {
 
 				// statisctics extrapolation for one link
 				if(isset($this->request->params->stats) && $this->request->params->stats && isset($this->shorturl)) {
-					$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats` 
-						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+					$per_monthResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, MONTH(`timestamp`) AS `month` FROM `stats`
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`) ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 					foreach($per_monthResult as $row) {
 						$this->return->data->stats->per_month[$row->month] = $row->value;
 					}
 
-					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats` 
-						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+					$per_dayOfWeekResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAYOFWEEK(`timestamp`) AS `dayOfWeek` FROM `stats`
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ?
 						GROUP BY DAYOFWEEK(`timestamp`) ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 					foreach($per_dayOfWeekResult as $row) {
 						$this->return->data->stats->per_dayOfWeek[$row->dayOfWeek] = $row->value;
 					}
 
-					$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats` 
-						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+					$per_dayResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, DAY(`timestamp`) AS `day` FROM `stats`
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`) ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 					foreach($per_dayResult as $row) {
 						$this->return->data->stats->per_day[$row->day] = $row->value;
 					}
 
-					$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats` 
-						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? 
+					$per_hourResult = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, HOUR(`timestamp`) AS `hour` FROM `stats`
+						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ?
 						GROUP BY YEAR(`timestamp`), MONTH(`timestamp`), DAY(`timestamp`), HOUR(`timestamp`) ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 					foreach($per_hourResult as $row) {
 						$this->return->data->stats->per_hour[$row->hour] = $row->value;
 					}
 
-					$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats` 
+					$this->return->data->stats->per_referer = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `referer` FROM `stats`
 						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `referer` ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 
-					$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats` 
+					$this->return->data->stats->per_useragent = $this->db->getRows("SELECT COUNT(`shorturl`) AS `value`, `timestamp`, `useragent` FROM `stats`
 						WHERE `shorturl`= ? AND `timestamp` BETWEEN ? AND ? GROUP BY `useragent` ;",
 						array($this->shorturl, $periodStart, $periodEnd));
 				}
@@ -336,8 +428,8 @@ class api {
 
 		if($this->get()) {
 			$currentShorturl = $this->shorturl;
-			if((!empty($this->request->params->newUrl) && $this->request->params->newUrl != $this->url) OR 
-			(!empty($this->request->params->newShorturl) && $this->request->params->newShorturl != $this->shorturl OR 
+			if((!empty($this->request->params->newUrl) && $this->request->params->newUrl != $this->url) OR
+			(!empty($this->request->params->newShorturl) && $this->request->params->newShorturl != $this->shorturl OR
 			isset($this->request->params->newShorturl) && empty($this->request->params->newShorturl))) {
 				if(isset($this->request->params->newShorturl) && empty($this->request->params->newShorturl)) {
 					$this->giveMeShortUrl();
@@ -356,7 +448,7 @@ class api {
 					$this->giveMeDescription();
 				}
 
-				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;", 
+				$result = $this->db->updateRow("UPDATE `data` SET `url` = ?, `ip` = ?, `description` = ?, `shorturl` = ? WHERE `shorturl` = ? AND `owner` = ? ;",
 				array($this->url, $this->ip, $this->description, $this->shorturl, $currentShorturl, $this->username));
 
 				if($result) {
@@ -377,7 +469,7 @@ class api {
 					}
 
 					if($this->shorturl != $currentShorturl) {
-						$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;", 
+						$result = $this->db->updateRow("UPDATE `stats` SET `shorturl` = ? WHERE `shorturl` = ? ;",
 							array($this->shorturl, $currentShorturl));
 					}
 				}
@@ -391,7 +483,7 @@ class api {
 
 					return TRUE;
 				} else {
-	
+
 					$this->statusCode = 202;
 					exit;
 				}
@@ -475,7 +567,7 @@ class api {
 			return FALSE;
 		} else {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-			$result = $this->db->getRow("SELECT COUNT(*) FROM `auth` WHERE `username` = ? AND `password` = ? ;", 
+			$result = $this->db->getRow("SELECT COUNT(*) FROM `auth` WHERE `username` = ? AND `password` = ? ;",
 			array($this->request->access->username, $this->request->access->password));
 
 			if($result->{"COUNT(*)"} == 1) {
@@ -543,9 +635,11 @@ class api {
 	 * @return (bool)
 	 */
 	private function giveMeDescription() {
+		$options = stream_context_create(array('http' => array('timeout' => $this->timeout)));
+
 		if(!empty($this->url)) {
 // TODO: check return header, and check status code (site is valid?)
-			$buffer = file_get_contents($this->url);
+			$buffer = file_get_contents($this->url, 0, $options);
 			if(strlen($buffer) > 0){
 				preg_match("/\<title\>(.*)\<\/title\>/", $buffer, $description);
 // TODO: fix this dummy things->
