@@ -612,7 +612,7 @@ class api {
 	 * @return (bool)
 	 */
 	private function giveMeShortUrl() {
-		$pattern = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRST";
+		$pattern = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		$shorten = "";
 		for($i = 0; $i < 5; $i++) {
 			$data = rand(0, strlen($pattern) - 1);
