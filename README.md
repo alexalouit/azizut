@@ -68,7 +68,7 @@ Response:
 ```
 {
   "data": {
-    "url": "http://www.yahoo.co.uk/",
+    "link": "http://www.yahoo.co.uk/",
     "shorturl": "GQlIM",
     "description": "..."
   },
@@ -97,7 +97,7 @@ Response:
 {
   "data": {
     "shorturl": "vEMQt",
-    "url": "http://www.yahoo.co.uk/",
+    "link": "http://www.yahoo.co.uk/",
     "clicks": "0",
     "ip": "00.000.000.00",
     "description": "unknown",
