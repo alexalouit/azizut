@@ -1,6 +1,6 @@
 <?php
 /**
- * Azizut API (core) class, design to be fast as possible
+ * Azizut guest (core) class, design to be fast as possible
  * @author Alex Alouit <alexandre.alouit@gmail.com>
  */
 
@@ -42,7 +42,10 @@ class guest {
 
 		$this->shorturl = $_SERVER['REQUEST_URI'];
 
+		// extract shortlink from raw (slash)
 		$this->shorturl = substr($this->shorturl, 1);
+
+		// check if is a qrcode request
 		if(substr($this->shorturl, -3) == ".qr") {
 			$this->qrcode = TRUE;
 			$this->shorturl = substr($this->shorturl, 0, -3);
@@ -53,15 +56,22 @@ class guest {
 			exit;
 		}
 
+		// check if we have cache defined
 		if(CACHE) {
+			// launch cache instance
 			$this->cache = new cache();
 		}
 
 		if(!$this->get()) {
+			// shortlink fetching failed
+			// we have nothing to do
 			exit;
 		} else {
+			// check Do No Track!
 			if(isset($_SERVER['HTTP_DNT']) && $_SERVER['HTTP_DNT'] == 1) {
-			} else { 
+				// user don't want to be tracked.
+				// default value will be use (unknown)
+			} else {
 				if(!empty($_SERVER['REMOTE_ADDR'])) {
 					$this->ip = $_SERVER['REMOTE_ADDR'];
 				}
@@ -94,6 +104,7 @@ class guest {
 	 */
 	public function __destruct() {
 		if(empty($this->url)) {
+			// deserve 404
 			error_log("File does not exist: /" . $this->shorturl);
 			header("HTTP/1.1 404 Not Found");
 ?>
@@ -152,18 +163,18 @@ class guest {
 			if(!$this->cache->insert()) {
 				error_log("Error with cache, insert directly in DB.");
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-				$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;", 
+				$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;",
 					array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime, $this->cacheHit));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-				$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
+				$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;",
 					array($this->shorturl));
 			}
 		} else {
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-			$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;", 
+			$result = $this->db->insertRow("INSERT INTO `stats` (`shorturl`, `ip`, `useragent`, `referer`, `timestamp`, `processtime`, `cacheHit`) VALUES (?, ?, ?, ?, ?, ?, ?) ;",
 				array($this->shorturl, $this->ip, $this->useragent, $this->referer, $this->timestamp, $this->processTime, $this->cacheHit));
 // TODO: WE NEED TO CHECK RETURN AND RETURN BOOL STATUS
-			$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;", 
+			$result = $this->db->insertRow("UPDATE `data` SET `clicks` = `clicks` + 1 WHERE `shorturl` = ? ;",
 				array($this->shorturl));
 		}
 	}
@@ -184,7 +195,7 @@ class guest {
 				// error with cache
 				$this->cacheHit = 0;
 				$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
+				$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;",
 					array($this->shorturl));
 
 				$this->url = $result->url;
@@ -210,7 +221,7 @@ class guest {
 		} else {
 			$this->cacheHit = 0;
 			$this->db = new db(MYSQL_SERVER, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD);
-			$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;", 
+			$result = $this->db->getRow("SELECT * FROM `data` WHERE `shorturl` = ? ;",
 				array($this->shorturl));
 
 			if(empty($result->url)) {

@@ -120,7 +120,9 @@ access: username password
 
 action: insert
 
-params: url
+params: url, [secure](bool)
+
+(secure: shorten only if target link return a valid 200 status code (false by default))
 
 
 ## - update link

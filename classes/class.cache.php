@@ -1,6 +1,6 @@
 <?php
 /**
- * Cache classes, support APC and Memcached.
+ * Cache class, support Memcached.
  * @author Alex Alouit <alexandre.alouit@gmail.com>
  */
 
