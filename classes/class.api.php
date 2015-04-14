@@ -144,6 +144,7 @@ class api {
 
 		$data = file_get_contents("php://input");
 		if(empty($data) OR !$this->request = json_decode($data)) {
+			// invalid json data
 			$this->statusCode = 400;
 
 			exit;
@@ -159,13 +160,18 @@ class api {
 		}
 
 		if(empty($this->request->action)) {
+			// we don't have action to perform
 			$this->statusCode = 400;
 			exit;
 		}
 
 		if(!empty($this->request->params->shorturl)) {
 			$shorturl = $this->request->params->shorturl;
+
+			// extract raw data from shorturl (protocol, domain, .qr, slash)
 			$shorturl = str_replace(array($this->host, $this->domain, "/", ".qr"), "", $shorturl);
+
+			// fetch shorturl
 			if(preg_match("(\A[0-9a-zA-Z]{5}\z)", $shorturl)) {
 				$this->shorturl = $shorturl;
 			}
@@ -198,8 +204,9 @@ class api {
 	 */
 	public function __destruct() {
 		$this->return->statusCode = $this->statusCode;
-		// return all data?
+// return all data?
 		// print json_encode($this);
+		// return response as json
 		print json_encode($this->return);
 
 		exit;
@@ -213,16 +220,38 @@ class api {
 	 */
 	private function insert() {
 		if(!empty($this->request->params->url)) {
+			// first, we check url validity
+
 			$this->url = filter_var($this->request->params->url, FILTER_SANITIZE_URL);
+
+			// generate an valid shortlink
 			$this->giveMeShortUrl();
-			$this->giveMeDescription();
+
+			// attempt to scrap title and description
+			$scaper = $this->giveMeDescription();
+
+			// check response if we are in secure mode
+			if(isset($this->request->params->secure) && $this->request->params->secure) {
+				if(!$scraper) {
+					// unable to fetch content
+
+					$this->statusCode = 404;
+					exit;
+				}
+			}
+
+			// insert in DB
 			$result = $this->db->insertRow("INSERT INTO `data` (`shorturl`, `url`, `ip`, `description`, `owner`, `timestamp`) VALUES (?, ?, ?, ?, ?, ?) ;",
 			array($this->shorturl, $this->url, $this->ip, $this->description, $this->username, $this->timestamp));
 			$this->return->data->shorturl = $this->shorturl;
 			$this->return->data->link = $this->host . $this->shorturl;
 			$this->return->data->description = $this->description;
+
+			// check is correctly insert in DB
 			if($result) {
+				// check if we have a cache backend
 				if(CACHE) {
+					// insert in cache
 					$this->cache = new cache();
 					$this->cache->type = "redirect";
 					$this->cache->key = $this->shorturl;
@@ -524,7 +553,10 @@ class api {
 			exit;
 		}
 
+		// check is in DB
 		if($this->get()) {
+
+			// we have cache backend
 			if(CACHE) {
 				$this->cache = new cache();
 				$this->cache->type = "redirect";
@@ -635,11 +667,19 @@ class api {
 	 * @return (bool)
 	 */
 	private function giveMeDescription() {
+// TODO: FETCH ONLY IF PROTOCOL IS DEFINED AND IS HTTP/S
 		$options = stream_context_create(array('http' => array('timeout' => $this->timeout)));
 
 		if(!empty($this->url)) {
-// TODO: check return header, and check status code (site is valid?)
 			$buffer = file_get_contents($this->url, 0, $options);
+
+			// have a valid return?
+			if($http_response_header[0] !== "HTTP/1.1 200 OK") {
+				// we don't have valid return
+
+				return FALSE;
+			}
+
 			if(strlen($buffer) > 0){
 				preg_match("/\<title\>(.*)\<\/title\>/", $buffer, $description);
 // TODO: fix this dummy things->
