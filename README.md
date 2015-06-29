@@ -120,7 +120,7 @@ access: username password
 
 action: insert
 
-params: url, [secure](bool)
+params: url, [ secure ] ( bool )
 
 (secure: shorten only if target link return a valid 200 status code (false by default))
 
@@ -149,7 +149,7 @@ params: shorturl/url
 
 action: get
 
-params: shorturl/url [stats](bool)
+params: shorturl/url [ stats ] ( bool )
 
 (shorturl is faster than url).
 
@@ -158,7 +158,7 @@ params: shorturl/url [stats](bool)
 
 action: get
 
-params: [start](int), [limit](int)
+params: [ start ] ( int ), [ limit ] ( int )
 
 
 Shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl".
