@@ -111,54 +111,62 @@ Response:
 
 ## - auth:
 
+```
 access: username password
 
 (you can only deal with your own data).
-
+```
 
 ## - create link
 
+```
 action: insert
 
 params: url, [ secure ] ( bool )
 
 (secure: shorten only if target link return a valid 200 status code (false by default))
-
+```
 
 ## - update link
 
+```
 action: update
 
 params: shorturl/url newShorturl/newUrl
 
 (newShorturl could be empty string (like ""),  for new "random" shorturl).
-
+```
 
 
 ## - delete link
 
+```
 action: delete
 
 params: shorturl/url
 
 (shorturl is faster than url).
-
+```
 
 
 ## - get a link
 
+```
 action: get
 
 params: shorturl/url [ stats ] ( bool )
 
 (shorturl is faster than url).
+```
 
 
 ## - get links
 
+```
 action: get
 
 params: [ start ] ( int ), [ limit ] ( int )
+```
 
 
 Shorturl could be: "http://domain.tld/shorturl" or "domain.tld/shorturl" or "/shorturl" or "shorturl".
