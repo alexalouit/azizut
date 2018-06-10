@@ -38,7 +38,8 @@ For async mode, use a cron (ex: each minutes) on /cron.php.
 
 # Short API usage:
 
-Dialog type is json (call & response),  php client class -> (https://github.com/alexalouit/azizut-client-class).
+Dialog type is json (call & response),  php client class -> 
+(https://git.alex.alouit.fr/cgi-bin/public/gitweb.cgi?p=azizut-client-class/.git;a=summary).
 
 Response always contain Standard HTTP Status code (as statusCode field), data return always in data field.
 
