@@ -1,6 +1,6 @@
 <?php
 /**
- * Azizut guest (core) class, design to be fast as possible
+ * Azizut API (core) class, design to be fast as possible
  * @author Alex Alouit <alexandre.alouit@gmail.com>
  */
 
@@ -44,6 +44,11 @@ class guest {
 
 		// extract shortlink from raw (slash)
 		$this->shorturl = substr($this->shorturl, 1);
+
+		// remove args
+		$tmp = explode('?', $this->shorturl);
+		$this->shorturl = $tmp[0];
+		unset($tmp);
 
 		// check if is a qrcode request
 		if(substr($this->shorturl, -3) == ".qr") {
@@ -103,6 +108,9 @@ class guest {
 	 * @return: http header for guests
 	 */
 	public function __destruct() {
+		@header('X-Engine: Zut');
+		@header_remove('X-Powered-By');
+
 		if(empty($this->url)) {
 			// deserve 404
 			error_log("File does not exist: /" . $this->shorturl);
